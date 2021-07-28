@@ -934,6 +934,33 @@ const flagUploadedPhoto =  async (parent, args) => {
     return args.id;
 }
 
+const setHomepageUploadedPhoto =  async (parent, args) => {
+    try {
+        await dbClient.db(dbName).collection('uploads').updateMany(
+            {},
+            {
+                $set: { homepage: false },
+                $currentDate: { updatedAt: true }
+            }
+        );
+
+        console.log(args)
+        const ids = args.ids.map(u => new ObjectId(u))
+
+        await dbClient.db(dbName).collection('uploads').updateMany(
+            { _id: { $in: ids } },
+            {
+                $set: { homepage: true },
+                $currentDate: { updatedAt: true }
+            }
+        );
+
+        return 'ok';
+    } catch (e){
+        return e
+    }
+}
+
 module.exports = {
     queries: {
         getUpload,
@@ -953,7 +980,8 @@ module.exports = {
         likeUploadedPhoto,
         validateUpload,
         flagUploadedPhoto,
-        verifyUploadedPhoto
+        verifyUploadedPhoto,
+        setHomepageUploadedPhoto
     },
     helper: {
         compensate,

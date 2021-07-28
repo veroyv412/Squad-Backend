@@ -54,6 +54,7 @@ const typeDefs = gql`
         tags: [String]
         earnedAmount: Float
         earning: MemberEarnings
+        homepage: Boolean
     }
 
     input UploadPhotoInput {
@@ -95,6 +96,7 @@ const typeDefs = gql`
         productUrl: String
         userLikes: [String]
         member: SearchUser
+        homepage: Boolean
     }
 
     type BrandUpload {
@@ -117,6 +119,7 @@ const typeDefs = gql`
         likeUploadedPhoto(id: ID, userId: ID): Boolean
         validateUpload(id: ID!): ValidateError
         flagUploadedPhoto(id: ID!): String
+        setHomepageUploadedPhoto(ids: [ID]): String
     }
 `
 
