@@ -6,6 +6,7 @@ const _ = require('lodash');
 
 const uploadResolvers = require('../resolvers/uploadPhoto');
 const notificationResolvers = require('../resolvers/notification');
+const PaymentProviderFactory = require('../../utils/Payments/Providers/PaymentProviderFactory');
 
 const activeCompensation = async (root, args, context, info) => {
     let oDate = new Date()
@@ -331,29 +332,85 @@ const disburseEarning = async (parent, args) => {
                     month: { $month: "$createdAt" }
                 }
         },
-        { $match : { "month" : args.month, "year": args.year, memberId: new ObjectId(args.memberId), $or: [{ flagged: false }, { flagged : { "$exists": false } }] } }
+        { $match : { "month" : args.month, "year": args.year, memberId: new ObjectId(args.memberId), payed: { "$exists": false }, $or: [{ flagged: false }, { flagged : { "$exists": false } }] } }
     ]).toArray()
 
-    let earningIds = earnings.map(e => new ObjectId(e._id) )
+    let venmoItems = []
+    for (const earning of earnings) {
+        let typeEntity = {}
+        let note = '';
 
-    earningIds.map(async (id) => {
+        if ( earning.type == 'offer' ){
+            typeEntity = await dbClient.db(dbName).collection("feedback_answers").findOne({ _id: new ObjectId(earning.entityId) })
+            note = `Congratulations ${earning.member.displayName}! You have been paid for answering a Customer's Feedback!`
+        }
 
-        //This probably changes when We make the payments inside the system with the Venmo ID or something
-        let paymentNumber = crypto.createHash('md5').update(id.toString()).digest("hex")
-        await dbClient.db(dbName).collection('member_earnings').update(
-            { _id: id },
-            {
-                $set: { payed: true, paymentDate: new Date(), paymentNumber: paymentNumber },
-                $currentDate: { updatedAt: true }
-            }
-        );
-    })
+        if ( earning.type == 'upload' ){
+            typeEntity = await dbClient.db(dbName).collection("uploads").findOne({ _id: new ObjectId(earning.entityId) })
+            note = `Congratulations ${earning.member.displayName}! You have been paid for a picture you uploaded named "${typeEntity.productName}"!`
+        }
+
+        const venmoItem = {
+            "amount": {
+                "value": earning.amount,
+                "currency": "USD"
+            },
+            "note": note,
+            "receiver": earning.member.phoneNumber,
+            "sender_item_id": earning._id.toString(),
+        };
+
+        venmoItems.push(venmoItem);
+    }
+    const member =  await dbClient.db(dbName).collection("users").findOne({ _id: new ObjectId(args.memberId) })
+    const hash = crypto.randomBytes(16).toString("hex")
+    const batchId = `payout_${args.month}-${args.year}_${member._id.toString()}_${hash}`
 
     try {
+        if ( venmoItems.length > 0 ){
+            const gateway = PaymentProviderFactory.create(PaymentProviderFactory.VENMO);
+            const providerResponseId = await gateway.payoutMember(batchId, venmoItems)
+
+            for (const earning of earnings) {
+                await dbClient.db(dbName).collection('member_earnings').update(
+                    { _id: earning._id },
+                    {
+                        $set: { payed: true, paymentDate: new Date(), paymentNumber: providerResponseId, venmoBatchId: batchId },
+                        $currentDate: { updatedAt: true }
+                    }
+                );
+            }
+
+            await dbClient.db(dbName).collection('member_payouts').insertOne(
+                {
+                    userId: new ObjectId(member._id),
+                    provider: 'venmo',
+                    providerBatchId: batchId,
+                    providerResponseId: providerResponseId,
+                    error: false,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            );
+        }
         return 'ok'
-    } catch (e) {
-        return e;
+    } catch (e){
+        await dbClient.db(dbName).collection('member_payouts').insertOne(
+            {
+                userId: new ObjectId(member._id),
+                provider: 'venmo',
+                providerBatchId: batchId,
+                error: true,
+                errorMessage: e.message,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }
+        );
+
+        return e
     }
+
+
 }
 
 const flagCompensationEarning = async (parent, args) => {
