@@ -35,6 +35,7 @@ const typeDefs = gql`
         paymentUsername:String
         status: String
         flagged: Boolean
+        phoneNumber: String
     }
 
     type Follower {
@@ -106,6 +107,7 @@ const typeDefs = gql`
         paymentMethod:String
         paymentUsername:String
         status:String
+        phoneNumber: String
     }
 
     input LookbookInput {

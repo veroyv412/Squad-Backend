@@ -350,18 +350,37 @@ const disburseEarning = async (parent, args) => {
             note = `Congratulations ${earning.member.displayName}! You have been paid for a picture you uploaded named "${typeEntity.productName}"!`
         }
 
-        const venmoItem = {
-            "amount": {
-                "value": earning.amount,
-                "currency": "USD"
-            },
-            "note": note,
-            "receiver": earning.member.phoneNumber,
-            "sender_item_id": earning._id.toString(),
-        };
+        if ( earning.member.phoneNumber ){
+            const venmoItem = {
+                "amount": {
+                    "value": earning.amount,
+                    "currency": "USD"
+                },
+                "note": note,
+                "receiver": earning.member.phoneNumber,
+                "sender_item_id": earning._id.toString(),
+            };
 
-        venmoItems.push(venmoItem);
+            venmoItems.push(venmoItem);
+        } else {
+            await dbClient.db(dbName).collection('member_payouts').insertOne(
+                {
+                    userId: new ObjectId(earning.member._id),
+                    provider: 'venmo',
+                    providerBatchId: null,
+                    error: true,
+                    errorCode: 'NO_PHONE',
+                    errorMessage: 'User does not have Phone Number saved in the account',
+                    month: args.month,
+                    year: args.year,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            );
+        }
+
     }
+
     const member =  await dbClient.db(dbName).collection("users").findOne({ _id: new ObjectId(args.memberId) })
     const hash = crypto.randomBytes(16).toString("hex")
     const batchId = `payout_${args.month}-${args.year}_${member._id.toString()}_${hash}`
@@ -388,6 +407,8 @@ const disburseEarning = async (parent, args) => {
                     providerBatchId: batchId,
                     providerResponseId: providerResponseId,
                     error: false,
+                    month: args.month,
+                    year: args.year,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }
@@ -395,19 +416,23 @@ const disburseEarning = async (parent, args) => {
         }
         return 'ok'
     } catch (e){
+        const error = JSON.parse(e.message)
         await dbClient.db(dbName).collection('member_payouts').insertOne(
             {
                 userId: new ObjectId(member._id),
                 provider: 'venmo',
                 providerBatchId: batchId,
                 error: true,
-                errorMessage: e.message,
+                errorCode: error.name,
+                errorMessage: error.issue,
+                month: args.month,
+                year: args.year,
                 createdAt: new Date(),
                 updatedAt: new Date()
             }
         );
 
-        return e
+        return error.message
     }
 
 

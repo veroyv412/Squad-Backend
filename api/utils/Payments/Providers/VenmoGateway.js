@@ -6,11 +6,11 @@ class VenmoGateway {
         let clientId = process.env.VENMO_CLIENT_ID;
         let clientSecret = process.env.VENMO_SECRET;
 
-        if (process.env.NODE_ENV === 'production') {
+        //if (process.env.NODE_ENV === 'production') {
             return new payoutsNodeJssdk.core.LiveEnvironment(clientId, clientSecret);
-        }
-        return new payoutsNodeJssdk.core.SandboxEnvironment(clientId, clientSecret);
+        //}
 
+        return new payoutsNodeJssdk.core.SandboxEnvironment(clientId, clientSecret);
     }
 
     constructor() {
