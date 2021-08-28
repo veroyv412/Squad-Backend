@@ -332,7 +332,14 @@ const disburseEarning = async (parent, args) => {
                     month: { $month: "$createdAt" }
                 }
         },
-        { $match : { "month" : args.month, "year": args.year, memberId: new ObjectId(args.memberId), payed: { "$exists": false }, $or: [{ flagged: false }, { flagged : { "$exists": false } }] } }
+        { $match : {
+            "month" : args.month,
+            "year": args.year,
+            memberId: new ObjectId(args.memberId),
+            $or: [{ payed: false }, { payed : { "$exists": false } }],
+            $or: [{ flagged: false }, { flagged : { "$exists": false } }]
+            }
+        }
     ]).toArray()
 
     console.log('Disburse earnings to: ')
