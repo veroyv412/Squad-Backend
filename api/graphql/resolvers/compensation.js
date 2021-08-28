@@ -335,6 +335,9 @@ const disburseEarning = async (parent, args) => {
         { $match : { "month" : args.month, "year": args.year, memberId: new ObjectId(args.memberId), payed: { "$exists": false }, $or: [{ flagged: false }, { flagged : { "$exists": false } }] } }
     ]).toArray()
 
+    console.log('Disburse earnings to: ')
+    console.log(earnings)
+
     let venmoItems = []
     for (const earning of earnings) {
         let typeEntity = {}
@@ -377,6 +380,8 @@ const disburseEarning = async (parent, args) => {
                     updatedAt: new Date()
                 }
             );
+
+            console.log(earning.member.displayName + ': User does not have phone number saved in account')
         }
 
     }
@@ -387,8 +392,13 @@ const disburseEarning = async (parent, args) => {
 
     try {
         if ( venmoItems.length > 0 ){
+            console.log('Venmo Items')
+            console.log(venmoItems)
             const gateway = PaymentProviderFactory.create(PaymentProviderFactory.VENMO);
             const providerResponseId = await gateway.payoutMember(batchId, venmoItems)
+
+            console.log('Venmo providerResponseId')
+            console.log(providerResponseId)
 
             for (const earning of earnings) {
                 await dbClient.db(dbName).collection('member_earnings').update(
@@ -414,6 +424,7 @@ const disburseEarning = async (parent, args) => {
                 }
             );
         }
+
         return 'ok'
     } catch (e){
         const error = JSON.parse(e.message)
