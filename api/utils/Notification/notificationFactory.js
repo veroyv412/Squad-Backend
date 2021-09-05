@@ -2,6 +2,7 @@ const NotificationOfferCreated = require('./notificationOfferCreated')
 const NotificationOfferEarned = require('./notificationOfferEarned')
 const NotificationSuccessfulUpload = require('./notificationSuccessfulUpload')
 const NotificationFollowMember = require('./notificationFollowMember')
+const NotificationSuccessfulDisbursement = require('./notificationSuccessfulDisbursement')
 
 class NotificationFactory {
     static create (type) {
@@ -19,6 +20,10 @@ class NotificationFactory {
 
         if (type === 'member_follow_member') {
             return new NotificationFollowMember()
+        }
+
+        if (type === 'member_successful_disbursement') {
+            return new NotificationSuccessfulDisbursement()
         }
 
         throw new Error('Invalid Notification Type')

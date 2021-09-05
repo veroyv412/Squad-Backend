@@ -301,6 +301,27 @@ const compensateProducts = async (parent, args) => {
     }
 }
 
+const getDisbursedNote = async (earning) => {
+    let note = ''
+    let typeEntity = {}
+    const earnedAmount = (earning.amount).toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    });
+
+    if ( earning.type === 'offer' ){
+        typeEntity = await dbClient.db(dbName).collection("feedback_answers").findOne({ _id: new ObjectId(earning.entityId) })
+        note = `Congratulations ${earning.member.displayName}! You have been paid ${earnedAmount} for answering a Customer's Feedback!`
+    }
+
+    if ( earning.type === 'upload' ){
+        typeEntity = await dbClient.db(dbName).collection("uploads").findOne({ _id: new ObjectId(earning.entityId) })
+        note = `Congratulations ${earning.member.displayName}! You have been paid ${earnedAmount} for a picture you uploaded named "${typeEntity.productName}"!`
+    }
+
+    return note
+}
+
 const disburseEarning = async (parent, args) => {
     let earnings = await dbClient.db(dbName).collection("member_earnings").aggregate([
         {
@@ -347,18 +368,7 @@ const disburseEarning = async (parent, args) => {
 
     let venmoItems = []
     for (const earning of earnings) {
-        let typeEntity = {}
-        let note = '';
-
-        if ( earning.type == 'offer' ){
-            typeEntity = await dbClient.db(dbName).collection("feedback_answers").findOne({ _id: new ObjectId(earning.entityId) })
-            note = `Congratulations ${earning.member.displayName}! You have been paid for answering a Customer's Feedback!`
-        }
-
-        if ( earning.type == 'upload' ){
-            typeEntity = await dbClient.db(dbName).collection("uploads").findOne({ _id: new ObjectId(earning.entityId) })
-            note = `Congratulations ${earning.member.displayName}! You have been paid for a picture you uploaded named "${typeEntity.productName}"!`
-        }
+        const note = await getDisbursedNote(earning)
 
         if ( earning.member.phoneNumber ){
             const venmoItem = {
@@ -415,6 +425,9 @@ const disburseEarning = async (parent, args) => {
                         $currentDate: { updatedAt: true }
                     }
                 );
+
+                const note = await getDisbursedNote(earning)
+                await notificationResolvers.helper.createSuccessfulDisbursedEarningNotificationToMember(member._id, earning._id, note)
             }
 
             await dbClient.db(dbName).collection('member_payouts').insertOne(
@@ -442,7 +455,7 @@ const disburseEarning = async (parent, args) => {
                 providerBatchId: batchId,
                 error: true,
                 errorCode: error.name,
-                errorMessage: error.issue,
+                errorMessage: error.message,
                 month: args.month,
                 year: args.year,
                 createdAt: new Date(),

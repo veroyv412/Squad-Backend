@@ -8,7 +8,8 @@ const NOTIFICATION_TYPES = {
     OFFER_CREATED: 'offer_created',
     MEMBER_OFFER_EARNED_AMOUNT: 'offer_earned_amount',
     MEMBER_SUCCESSFUL_UPLOAD: 'member_successful_upload',
-    MEMBER_FOLLOW_MEMBER: 'member_follow_member'
+    MEMBER_FOLLOW_MEMBER: 'member_follow_member',
+    MEMBER_SUCCESSFUL_DISBURSEMENT: 'member_successful_disbursement'
 }
 
 const NOTIFICATION_FROM_TO_TYPES = {
@@ -181,7 +182,21 @@ const createSuccessfulUploadNotificationToMember = async (uploadIds, amount) => 
     }
 }
 
+const createSuccessfulDisbursedEarningNotificationToMember = async (userId, externalId, note) => {
+    const data = {
+        type: NOTIFICATION_TYPES.MEMBER_SUCCESSFUL_DISBURSEMENT,
+        title: "New Disbursement",
+        message: note,
+        fromUserType: NOTIFICATION_FROM_TO_TYPES.ADMIN,
+        fromUserId: "5ecfb68302d386b70167d566",
+        toUserType: NOTIFICATION_FROM_TO_TYPES.MEMBER,
+        toUserId: new ObjectId(userId),
+        externalId: new ObjectId(externalId),
+    }
 
+    console.log('Create Successful Disbursed Notification To Members ', data)
+    await addNotification(data)
+}
 
 /* Mutations */
 const readNotification =  async (parent, args) => {
@@ -212,6 +227,7 @@ module.exports = {
         createOfferNotificationsToMembers,
         createAnswerFeedbackEarnedNotificationToMember,
         createSuccessfulUploadNotificationToMember,
-        createFollowNotificationToMember
+        createFollowNotificationToMember,
+        createSuccessfulDisbursedEarningNotificationToMember
     }
 }
