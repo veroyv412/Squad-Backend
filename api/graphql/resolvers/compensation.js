@@ -345,6 +345,7 @@ const disburseEarning = async (parent, args) => {
                     memberId:"$memberId",
                     member: "$member",
                     payed: "$payed",
+                    flagged: "$flagged",
                     entityId: "$entityId",
                     type: "$type",
                     createdAt: "$createdAt",
