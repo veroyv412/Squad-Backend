@@ -55,6 +55,7 @@ const typeDefs = gql`
         earnedAmount: Float
         earning: MemberEarnings
         homepage: Boolean
+        hidden: Boolean
     }
 
     input UploadPhotoInput {
@@ -117,6 +118,7 @@ const typeDefs = gql`
         updateUploadedPhoto(uploadPhoto: UploadPhotoInput!): String
         verifyUploadedPhoto(uploadPhoto: UploadPhotoInput!): String
         likeUploadedPhoto(id: ID, userId: ID): Boolean
+        hideUnhideUploadedPhoto(id: ID): Boolean
         validateUpload(id: ID!): ValidateError
         flagUploadedPhoto(id: ID!): String
         setHomepageUploadedPhoto(ids: [ID]): String

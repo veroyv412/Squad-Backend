@@ -811,6 +811,23 @@ const likeUploadedPhoto =  async (parent, args) => {
     return true;
 }
 
+const hideUnhideUploadedPhoto =  async (parent, args) => {
+    const upload = await dbClient.db(dbName).collection("uploads").findOne({_id: new ObjectId(args.id)});
+    const hidden = upload.hidden ? !upload.hidden : true;
+
+    await dbClient.db(dbName).collection('uploads').updateOne(
+        { _id: new ObjectId(args.id) },
+        {
+            $set: { hidden: hidden },
+            $currentDate: { updatedAt: true }
+        }
+    );
+
+
+    return true;
+}
+
+
 const compensateUploads = async(amount) => {
     try {
         const uploads = await dbClient.db(dbName).collection("uploads").find({ approved: true, credited: null }).toArray();
@@ -978,6 +995,7 @@ module.exports = {
         addUploadedPhoto,
         updateUploadedPhoto,
         likeUploadedPhoto,
+        hideUnhideUploadedPhoto,
         validateUpload,
         flagUploadedPhoto,
         verifyUploadedPhoto,
