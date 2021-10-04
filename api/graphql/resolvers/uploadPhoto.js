@@ -334,7 +334,9 @@ const getBrandUploads =  async (root, args, context, info) => {
 const uploadsSearch = async (root, args, context, info) => {
     let { searchParam, brandIds, uploadIds, categoryIds, productIds } = args;
 
-    let $match = { $match: {} };
+    let $match = { $match: {
+            $or: [{ hidden: false }, { hidden : { "$exists": false } }]
+        } };
     const $sort = { $sort: { score: { $meta: "textScore" } } };
 
     if ( searchParam && searchParam != '-' ){
