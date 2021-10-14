@@ -137,6 +137,7 @@ const typeDefs = gql`
         lookbookit(data:LookbookInput):String
         unlookbookit(id:ID):String
         sendConfirmationEmail(id:ID):Boolean
+        sendAfterConfirmationEmail(id:ID):Boolean
         updateUserStatus(id:ID):Boolean
         deleteProfile(id:ID):Boolean
         follow(userId1:ID, userId2:ID): String

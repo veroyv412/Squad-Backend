@@ -478,6 +478,35 @@ const sendConfirmationEmail = async (parent, args) => {
     return true;
 }
 
+const sendAfterConfirmationEmail = async (parent, args) => {
+    try {
+        let user = await dbClient.db(dbName).collection('users').findOne({$or: [{stitchId: args.id}, {email: args.id}]});
+        console.log(user)
+
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+        const msg = {
+            to: user.email,
+            from: {
+                name: "The SQUAD Team",
+                email: "fred@teammysquad.com"
+            },
+            templateId: "d-eb1d7a9768084517946234c5fa2e2583",
+            dynamic_template_data: {
+                name: user.displayName
+            }
+        };
+
+        console.log(msg)
+
+        await sgMail.send(msg);
+    } catch (e){
+        console.log(e)
+        return e;
+    }
+
+    return true;
+}
+
 const follow = async (parent, args) => {
     try {
         let follower = {
@@ -589,6 +618,7 @@ module.exports = {
         updateUserStatus,
         deleteProfile,
         sendConfirmationEmail,
+        sendAfterConfirmationEmail,
         follow,
         unfollow,
         answerFeedback
