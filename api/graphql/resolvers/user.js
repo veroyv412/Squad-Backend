@@ -457,7 +457,7 @@ const sendConfirmationEmail = async (parent, args) => {
         const msg = {
             to: user.email,
             from: {
-                name: "The SQUAD Team",
+                name: "The Lookbook Team",
                 email: "fred@teammysquad.com"
             },
             templateId: "d-b4712b8325e74eab98976c4ba0bcd5b9",
@@ -487,7 +487,7 @@ const sendAfterConfirmationEmail = async (parent, args) => {
         const msg = {
             to: user.email,
             from: {
-                name: "The SQUAD Team",
+                name: "The Lookbook Team",
                 email: "fred@teammysquad.com"
             },
             templateId: "d-eb1d7a9768084517946234c5fa2e2583",
