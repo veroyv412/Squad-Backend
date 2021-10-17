@@ -130,7 +130,8 @@ const getPendingUploads = async (root, args, context, info) => {
                 as : "product"
             }
         },
-        { $match : {$or: [{ approved: false }, { approved: null }]} }
+        { $match : { $and: [{ $or: [{ flagged: false }, { flagged : { "$exists": false } }] }, { $or: [ { approved: false }, { approved: null } ] },] }
+        }
     ]).toArray();
 
     for ( let upload of uploads ){
@@ -179,7 +180,7 @@ const getFlaggedUploads = async (root, args, context, info) => {
                 as : "product"
             }
         },
-        { $match : { approved : null, flagged: true } }
+        { $match : { $or: [{ approved: false }, { approved : { "$exists": false } }, { approved: null }], flagged: true } }
     ]).toArray();
 
     for ( let upload of uploads ){
