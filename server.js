@@ -53,7 +53,8 @@ const server = new ApolloServer({
         require('./api/graphql/modules/uploadPhoto'),
         require('./api/graphql/modules/product'),
         require('./api/graphql/modules/compensation'),
-        require('./api/graphql/modules/notification')
+        require('./api/graphql/modules/notification'),
+        require('./api/graphql/modules/analytics')
     ]
 });
 
