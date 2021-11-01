@@ -40,7 +40,12 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
             { $group: { _id: "$brandName", brandCount: { $sum : 1 } }},
             { $project: { brandCount: 1, brandName : 1 }}
         ]).toArray();
-        result.data.push( { name: brandUploads[0]._id, count: brandUploads[0].brandCount})
+
+        if ( brandUploads.length > 0 ){
+            result.data.push( { name: brandUploads[0]._id, count: brandUploads[0].brandCount})
+        } else {
+            result.data.push( { name: 'No Brand', count: 0})
+        }
     }
 
     if ( categoryId && categoryId != '-' ){
@@ -62,7 +67,11 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
             { $group: { _id: "$categoryName", categoryCount: { $sum : 1 } }},
             { $project: { categoryCount: 1, categoryName : 1 }}
         ]).toArray();
-        result.data.push( { name: categoryUploads[0]._id, count: categoryUploads[0].categoryCount})
+        if ( categoryUploads.length > 0 ){
+            result.data.push( { name: categoryUploads[0]._id, count: categoryUploads[0].categoryCount})
+        } else {
+            result.data.push( { name: 'No Category', count: 0})
+        }
     }
 
     if ( productId && productId != '-' ){
@@ -77,14 +86,18 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
             },
             {
                 $addFields: {
-                    "productName": { "$arrayElemAt": [ "$product.name", 0 ] },
+                    "productName": { "$arrayElemAt": [ "$product.productName", 0 ] },
                 }
             },
             { $match: { productId: { $eq: new ObjectId(productId) } } },
             { $group: { _id: "$productName", productCount: { $sum : 1 } }},
             { $project: { productCount: 1, productName : 1 }}
         ]).toArray();
-        result.data.push( { name: productUploads[0]._id, count: productUploads[0].productCount})
+        if ( productUploads.length > 0 ){
+            result.data.push( { name: productUploads[0]._id, count: productUploads[0].productCount})
+        } else {
+            result.data.push( { name: 'No Product', count: 0})
+        }
     }
 
     console.log('getFilterLooksByBrandCategoryProduct', result)
