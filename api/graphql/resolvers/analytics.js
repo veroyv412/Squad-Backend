@@ -238,6 +238,190 @@ const getLooksCountByMonth = async (root, args, context, info) => {
 }
 
 
+const getTotalSignups = async (root, args, context, info) => {
+    const users = await dbClient.db(dbName).collection("users").find({role: "member"}).count();
+    return users;
+}
+
+const getFilterMemberByGenderAgeLocation = async (root, args, context, info) => {
+    const { gender = null, location = null, ageFrom = null, ageTo = null } = args;
+
+    let result = {}
+    let TotalUsers = await dbClient.db(dbName).collection("users").find({role:"member"}).count();
+    result.totalCount = TotalUsers
+    result.data = []
+
+    if ( gender ){
+        const usersGender = await dbClient.db(dbName).collection("users").aggregate([
+            { $match: { gender: gender, role: "member" } },
+            { $group: { _id: "$gender", genderCount: { $sum : 1 } }},
+            { $project: { genderCount: 1, gender : 1 }}
+        ]).toArray();
+
+        if ( usersGender.length > 0 ){
+            result.data.push( { name: usersGender[0]._id, count: usersGender[0].genderCount})
+        } else {
+            result.data.push( { name: 'No Gender', count: 0})
+        }
+    }
+
+    if ( location ){
+        const usersLocation = await dbClient.db(dbName).collection("users").aggregate([
+            { $match: { "locationCity": new RegExp(location), role: "member" } },
+            { $group: { _id: "$locationCity", locationCount: { $sum : 1 } }},
+            { $project: { locationCount: 1, hometownCity : 1 }}
+        ]).toArray();
+
+        if ( usersLocation.length > 0 ){
+            result.data.push( { name: usersLocation[0]._id, count: usersLocation[0].locationCount})
+        } else {
+            result.data.push( { name: 'No Location', count: 0})
+        }
+    }
+
+    if ( ageFrom && ageTo){
+        const usersAgeCount = await dbClient.db(dbName).collection("users").find({ age: { $gte: ageFrom, $lte: ageTo }, role: "member" }).count();
+        if ( usersAgeCount > 0 ){
+            result.data.push( { name: ageFrom + ' to ' + ageTo, count: usersAgeCount})
+        } else {
+            result.data.push( { name: 'No Age', count: 0})
+        }
+    }
+
+    return result
+}
+
+const getSignupsCountByDay = async (root, args, context, info) => {
+    const dayOfMonth = +moment(args.date, "YYYY-MM-DD").format('DD');
+    const month = +moment(args.date, "YYYY-MM-DD").format('MM');
+    const year = +moment(args.date, "YYYY-MM-DD").format('YYYY');
+
+    let users = await dbClient.db(dbName).collection("users").aggregate([
+        {
+            $project:
+                {
+                    _id: "$_id",
+                    createdAt: "$createdAt",
+                    year: { $year: "$createdAt" },
+                    month: { $month: "$createdAt" },
+                    day: { $dayOfMonth: "$createdAt" },
+                    role: "$role"
+                }
+        },
+        { $match : { day : dayOfMonth, month: month, year: year, role: "member" } },
+    ]).toArray()
+
+    console.log('getSignupsCountByDay', users.length)
+
+    return {
+        totalCount: users.length,
+        data: [
+            {
+                name: args.date,
+                count: users.length
+            }
+        ]
+    }
+}
+
+const getSignupsCountByWeekRange = async (root, args, context, info) => {
+
+    let users = await dbClient.db(dbName).collection("users").aggregate([
+        {
+            $project:
+                {
+                    _id: "$_id",
+                    createdAt: "$createdAt",
+                    year: { $year: "$createdAt" },
+                    month: { $dateToString: { format: "%m", date: "$createdAt" } },
+                    day: { $dayOfMonth: "$createdAt" },
+                    name: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                    role: "$role"
+                }
+        },
+        { $match : { role: "member", createdAt: { $gte: new Date(args.dateFrom), $lte: new Date(args.dateTo) }}},
+        { $group: {  _id : { name : "$name" }, count: { $sum : 1 }  }},
+        { $sort : { "_id.name": 1 } },
+    ]).toArray()
+
+    console.log('getSignupsCountByWeekRange', users)
+
+    const result = {
+        totalCount: users.reduce(function(count, u){
+            return count + u.count;
+        }, 0),
+        data: users.map(u => {
+            return { name: u._id.name, count: u.count }
+        })
+    }
+
+    return result
+}
+
+const getSignupsCountByYearRange = async (root, args, context, info) => {
+
+    let users = await dbClient.db(dbName).collection("users").aggregate([
+        {
+            $project:
+                {
+                    _id: "$_id",
+                    createdAt: "$createdAt",
+                    year: { $year: "$createdAt" },
+                    role: "$role"
+                }
+        },
+        { $match : { role: "member", createdAt: { $gte: new Date(args.dateFrom), $lte: new Date(args.dateTo) }}},
+        { $group: {  _id : { year : "$year" }, count: { $sum : 1 }  }},
+        { $sort : { "_id.year": 1 } },
+    ]).toArray()
+
+    console.log('getSignupsCountByYearRange', users)
+
+    const result = {
+        totalCount: users.reduce(function(count, u){
+            return count + u.count;
+        }, 0),
+        data: users.map(u => {
+            return { name: u._id.year, count: u.count }
+        })
+    }
+
+    return result
+}
+
+const getSignupsCountByMonth = async (root, args, context, info) => {
+    let year = +moment(args.date, "YYYY-MM-DD").format('YYYY');
+
+    let users = await dbClient.db(dbName).collection("users").aggregate([
+        {
+            $project:
+                {
+                    _id: "$_id",
+                    createdAt: "$createdAt",
+                    month: { $dateToString: { format: "%m", date: "$createdAt" } },
+                    year: { $year: "$createdAt" },
+                    role: "$role"
+                }
+        },
+        { $match : { role: "member", year: { $eq: year }}},
+        { $group: {  _id : { month : "$month" }, count: { $sum : 1 }  }},
+        { $sort : { "_id.month": 1 } },
+    ]).toArray()
+
+    console.log('getSignupsCountByMonth', users)
+
+    const result = {
+        totalCount: users.reduce(function(count, u){
+            return count + u.count;
+        }, 0),
+        data: users.map(u => {
+            return { name: u._id.month, count: u.count }
+        })
+    }
+
+    return result
+}
+
 module.exports = {
     queries: {
         getTotalLooks,
@@ -245,7 +429,14 @@ module.exports = {
         getLooksCountByDay,
         getLooksCountByWeekRange,
         getLooksCountByYearRange,
-        getLooksCountByMonth
+        getLooksCountByMonth,
+
+        getTotalSignups,
+        getFilterMemberByGenderAgeLocation,
+        getSignupsCountByDay,
+        getSignupsCountByWeekRange,
+        getSignupsCountByYearRange,
+        getSignupsCountByMonth,
     },
 
 }

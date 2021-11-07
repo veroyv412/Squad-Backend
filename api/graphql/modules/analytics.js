@@ -10,6 +10,13 @@ const typeDefs = gql`
       getLooksCountByWeekRange(dateFrom: Date, dateTo: Date): analyticCountType
       getLooksCountByYearRange(dateFrom: Date, dateTo: Date): analyticCountType
       getLooksCountByMonth(date: Date): analyticCountType
+      
+      getTotalSignups: Int
+      getFilterMemberByGenderAgeLocation(gender:String, location: String, ageFrom: String, ageTo:String): analyticCountType
+      getSignupsCountByDay(date: Date): analyticCountType
+      getSignupsCountByWeekRange(dateFrom: Date, dateTo: Date): analyticCountType
+      getSignupsCountByYearRange(dateFrom: Date, dateTo: Date): analyticCountType
+      getSignupsCountByMonth(date: Date): analyticCountType
     }
 
     type analyticCountData {
