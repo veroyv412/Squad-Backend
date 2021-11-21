@@ -1,6 +1,7 @@
 const { dbClient, dbName } = require('../../config/mongo');
 const ObjectId = require('mongodb').ObjectId;
 const NotificationFactory = require('../../utils/Notification/notificationFactory')
+const sgMail = require('@sendgrid/mail');
 
 const moment = require('moment'); // require
 
@@ -161,6 +162,8 @@ const createSuccessfulUploadNotificationToMember = async (uploadIds, amount) => 
             currency: 'USD',
         });
 
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
         for ( let upload of _uploads ){
             const data = {
                 type: NOTIFICATION_TYPES.MEMBER_SUCCESSFUL_UPLOAD,
@@ -175,6 +178,25 @@ const createSuccessfulUploadNotificationToMember = async (uploadIds, amount) => 
 
             console.log('Create Successful Upload Notification To Members ', data)
             await addNotification(data)
+
+            let user = await dbClient.db(dbName).collection('users').findOne({_id: new ObjectId(upload.memberId)});
+            console.log(user)
+
+            const msg = {
+                to: user.email,
+                from: {
+                    name: "The Lookbook Team",
+                    email: "fred@teammysquad.com"
+                },
+                templateId: "d-36a5f60e1dda491baec106a27add0866",
+                dynamic_template_data: {
+                    earnings_link: process.env.FRONTEND_URL + `member/earnings`,
+                    add_phone_number_link: process.env.FRONTEND_URL + `member/profile`,
+                }
+            };
+
+            console.log('Upload compensation email.', msg)
+            await sgMail.send(msg);
         }
 
     } catch (e) {
