@@ -12,7 +12,7 @@ const typeDefs = gql`
       getLooksCountByMonth(date: Date): analyticCountType
       
       getTotalSignups: Int
-      getFilterMemberByGenderAgeLocation(gender:String, location: String, ageFrom: String, ageTo:String): analyticCountType
+      getFilterMemberByGenderAgeLocation(gender:String, location: String, ageFrom: String, ageTo:String): analyticCountTypeList
       getSignupsCountByDay(date: Date): analyticCountType
       getSignupsCountByWeekRange(dateFrom: Date, dateTo: Date): analyticCountType
       getSignupsCountByYearRange(dateFrom: Date, dateTo: Date): analyticCountType
@@ -27,6 +27,12 @@ const typeDefs = gql`
     type analyticCountType {
       totalCount: Int
       data: [analyticCountData]
+    }
+    
+    type analyticCountTypeList {
+      totalCount: Int
+      data: [analyticCountData]
+      list: [User]
     }
 `
 

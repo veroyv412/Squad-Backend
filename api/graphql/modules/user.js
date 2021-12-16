@@ -36,6 +36,7 @@ const typeDefs = gql`
         status: String
         flagged: Boolean
         phoneNumber: String
+        createdAt: Date
     }
 
     type Follower {

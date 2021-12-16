@@ -250,6 +250,7 @@ const getFilterMemberByGenderAgeLocation = async (root, args, context, info) => 
     let TotalUsers = await dbClient.db(dbName).collection("users").find({role:"member"}).count();
     result.totalCount = TotalUsers
     result.data = []
+    result.list = []
 
     if ( gender ){
         const usersGender = await dbClient.db(dbName).collection("users").aggregate([
@@ -258,8 +259,13 @@ const getFilterMemberByGenderAgeLocation = async (root, args, context, info) => 
             { $project: { genderCount: 1, gender : 1 }}
         ]).toArray();
 
+        const usersGenderList = await dbClient.db(dbName).collection("users").aggregate([
+            { $match: { gender: gender, role: "member" } },
+        ]).toArray();
+
         if ( usersGender.length > 0 ){
             result.data.push( { name: usersGender[0]._id, count: usersGender[0].genderCount})
+            result.list = usersGenderList
         } else {
             result.data.push( { name: 'No Gender', count: 0})
         }
@@ -272,8 +278,13 @@ const getFilterMemberByGenderAgeLocation = async (root, args, context, info) => 
             { $project: { locationCount: 1, hometownCity : 1 }}
         ]).toArray();
 
+        const usersLocationList = await dbClient.db(dbName).collection("users").aggregate([
+            { $match: { "locationCity": new RegExp(location), role: "member" } },
+        ]).toArray();
+
         if ( usersLocation.length > 0 ){
             result.data.push( { name: usersLocation[0]._id, count: usersLocation[0].locationCount})
+            result.list = usersLocationList
         } else {
             result.data.push( { name: 'No Location', count: 0})
         }
@@ -281,8 +292,10 @@ const getFilterMemberByGenderAgeLocation = async (root, args, context, info) => 
 
     if ( ageFrom && ageTo){
         const usersAgeCount = await dbClient.db(dbName).collection("users").find({ age: { $gte: ageFrom, $lte: ageTo }, role: "member" }).count();
+        const usersAgeCountList = await dbClient.db(dbName).collection("users").find({ age: { $gte: ageFrom, $lte: ageTo }, role: "member" }).toArray();
         if ( usersAgeCount > 0 ){
             result.data.push( { name: ageFrom + ' to ' + ageTo, count: usersAgeCount})
+            result.list = usersAgeCountList
         } else {
             result.data.push( { name: 'No Age', count: 0})
         }
