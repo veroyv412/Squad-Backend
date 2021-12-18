@@ -247,10 +247,10 @@ const getFilterMemberByGenderAgeLocation = async (root, args, context, info) => 
     const { gender = null, location = null, ageFrom = null, ageTo = null } = args;
 
     let result = {}
-    let TotalUsers = await dbClient.db(dbName).collection("users").find({role:"member"}).count();
-    result.totalCount = TotalUsers
+    let TotalUsers = await dbClient.db(dbName).collection("users").find({role:"member"}).toArray();
+    result.totalCount = TotalUsers.length
     result.data = []
-    result.list = []
+    result.list = TotalUsers
 
     if ( gender ){
         const usersGender = await dbClient.db(dbName).collection("users").aggregate([
