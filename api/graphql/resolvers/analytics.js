@@ -10,18 +10,23 @@ const getTotalLooks = async (root, args, context, info) => {
 }
 
 const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) => {
-    let { brandId, categoryId, productId } = args;
-
-    let $matchBrand = { $match: {}}
-    let $matchCategory = { $match: {}}
-    let $matchProduct = { $match: {}}
+    let { brandId, categoryId, productId, userId } = args;
 
     let result = {}
-    let TotalUploads = await dbClient.db(dbName).collection("uploads").find().count();
-    result.totalCount = TotalUploads
+    let totalUploads = await dbClient.db(dbName).collection("uploads").find().count();
+    if ( userId ){
+        totalUploads = await dbClient.db(dbName).collection("uploads").find({ memberId: new ObjectId(userId) }).count();
+    }
+
+    result.totalCount = totalUploads
     result.data = []
 
     if ( brandId && brandId != '-' ){
+        let match = { brandId: { $eq: new ObjectId(brandId) } } ;
+        if ( userId ){
+            match['memberId'] = { $eq: new ObjectId(userId) }
+        }
+
         const brandUploads = await dbClient.db(dbName).collection("uploads").aggregate([
             {
                 $lookup:{
@@ -36,7 +41,7 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
                     "brandName": { "$arrayElemAt": [ "$brand.name", 0 ] },
                 }
             },
-            { $match: { brandId: { $eq: new ObjectId(brandId) } } },
+            { $match: match },
             { $group: { _id: "$brandName", brandCount: { $sum : 1 } }},
             { $project: { brandCount: 1, brandName : 1 }}
         ]).toArray();
@@ -49,6 +54,11 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
     }
 
     if ( categoryId && categoryId != '-' ){
+        let match = { categoryId: { $eq: new ObjectId(categoryId) } } ;
+        if ( userId ){
+            match['memberId'] = { $eq: new ObjectId(userId) }
+        }
+
         const categoryUploads = await dbClient.db(dbName).collection("uploads").aggregate([
             {
                 $lookup:{
@@ -63,7 +73,7 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
                     "categoryName": { "$arrayElemAt": [ "$category.name", 0 ] },
                 }
             },
-            { $match: { categoryId: { $eq: new ObjectId(categoryId) } } },
+            { $match: match },
             { $group: { _id: "$categoryName", categoryCount: { $sum : 1 } }},
             { $project: { categoryCount: 1, categoryName : 1 }}
         ]).toArray();
@@ -75,6 +85,11 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
     }
 
     if ( productId && productId != '-' ){
+        let match = { productId: { $eq: new ObjectId(productId) } } ;
+        if ( userId ){
+            match['memberId'] = { $eq: new ObjectId(userId) }
+        }
+
         const productUploads = await dbClient.db(dbName).collection("uploads").aggregate([
             {
                 $lookup:{
@@ -89,7 +104,7 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
                     "productName": { "$arrayElemAt": [ "$product.productName", 0 ] },
                 }
             },
-            { $match: { productId: { $eq: new ObjectId(productId) } } },
+            { $match: match },
             { $group: { _id: "$productName", productCount: { $sum : 1 } }},
             { $project: { productCount: 1, productName : 1 }}
         ]).toArray();
