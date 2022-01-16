@@ -16,6 +16,8 @@ const typeDefs = gql`
         getUserFeedbacks(id: ID): [CustomerFeedback]
         getUserCompletedAnswers(id: ID): [FeedbackAnswer]
         getUserAnswer(id: ID): FeedbackAnswer
+        getUserTotalLooks(id: ID): Int
+        getUserLastUpdatedDate(id: ID):String
     }
 
     scalar Date

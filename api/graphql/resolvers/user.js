@@ -2,6 +2,7 @@ const { dbClient, dbName } = require('../../config/mongo');
 const ObjectId = require('mongodb').ObjectId;
 const sgMail = require('@sendgrid/mail');
 const jwt = require('jsonwebtoken');
+const moment = require('moment'); // require
 
 const notificationResolvers = require('../resolvers/notification');
 
@@ -84,6 +85,25 @@ const isFollowing = async (root, { userId1, userId2 }, context, info) => {
     }
 
     return false;
+}
+
+const getUserTotalLooks = async (root, { id }, context, info) => {
+    const count = await dbClient.db(dbName).collection("uploads").find({memberId: new ObjectId(id)}).count();
+    console.log(count)
+    return count;
+}
+
+const getUserLastUpdatedDate = async (root, { id }, context, info) => {
+    const look = await dbClient.db(dbName).collection("uploads")
+        .findOne({ "$query": {memberId: new ObjectId(id)}, "$orderby":{createdAt: -1}});
+
+    if ( look ){
+        let mDate = moment(look.createdAt)
+        let sDate = mDate.format("MM-DD-YYYY")
+       return  sDate
+    }
+
+    return null;
 }
 
 const getFollowers = async (root, { id }, context, info) => {
@@ -637,7 +657,9 @@ module.exports = {
         getLookbookByUserId,
         getFollowers,
         getFollowings,
-        isFollowing
+        isFollowing,
+        getUserTotalLooks,
+        getUserLastUpdatedDate
     },
     mutations: {
         updateUser,
