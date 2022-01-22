@@ -33,6 +33,8 @@
     "mongodb": "^3.3.3",
     "mongodb-stitch-server-sdk": "^4.8.0",
     "morgan": "^1.9.1",
+    "realm": "^10.11.0",
+    "realm-js": "^1.1.97",
     "winston": "3.2.1"
   },
   "devDependencies": {

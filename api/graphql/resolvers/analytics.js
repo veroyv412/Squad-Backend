@@ -3,6 +3,8 @@ const ObjectId = require('mongodb').ObjectId;
 const moment = require('moment'); // require
 const crypto = require('crypto');
 const _ = require('lodash');
+const { RealmApiClient } = require('../../utils/Realm')
+
 
 const getTotalLooks = async (root, args, context, info) => {
     const uploads = await dbClient.db(dbName).collection("uploads").find().count();
@@ -316,6 +318,19 @@ const getFilterMemberByGenderAgeLocation = async (root, args, context, info) => 
         }
     }
 
+    const realmApi = new RealmApiClient();
+
+    for ( const userKey in result.list ){
+        const user = result.list[userKey]
+        try {
+            let findRealmUser = await realmApi.getUser(user.stitchId)
+            if ( findRealmUser ){
+                user.lastActiveAt = new Date(findRealmUser.last_authentication_date*1000)
+            }
+        } catch (e) {
+            console.log(e)
+        }
+    }
     return result
 }
 
