@@ -249,7 +249,8 @@ const getUserUploads =  async (root, args, context, info) => {
                 "earning": { "$arrayElemAt": [ "$memberEarnings", 0 ] },
             }
         },
-        { $match : { memberId : new ObjectId(args.userId) } }
+        { $match : { memberId : new ObjectId(args.userId) } },
+        { $sort: { createdAt: -1 } }
     ]).toArray();
 
     return uploads;
