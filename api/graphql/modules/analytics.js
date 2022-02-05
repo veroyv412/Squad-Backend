@@ -17,20 +17,27 @@ const typeDefs = gql`
       getSignupsCountByWeekRange(dateFrom: Date, dateTo: Date): analyticCountType
       getSignupsCountByYearRange(dateFrom: Date, dateTo: Date): analyticCountType
       getSignupsCountByMonth(date: Date): analyticCountType
+      
+      getTotalCredits(customerId: ID): Float
+      getFilterCustomerId(customerId:ID): analyticCountTypeList
+      getOfferCreditsByDay(date: Date): analyticCountType
+      getOfferCreditsByWeekRange(dateFrom: Date, dateTo: Date): analyticCountType
+      getOfferCreditsByYearRange(dateFrom: Date, dateTo: Date): analyticCountType
+      getOfferCreditsByMonth(date: Date): analyticCountType
     }
 
     type analyticCountData {
       name: String
-      count: Int
+      count: Float
     }
     
     type analyticCountType {
-      totalCount: Int
+      totalCount: Float
       data: [analyticCountData]
     }
     
     type analyticCountTypeList {
-      totalCount: Int
+      totalCount: Float
       data: [analyticCountData]
       list: [User]
     }

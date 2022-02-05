@@ -465,6 +465,223 @@ const getSignupsCountByMonth = async (root, args, context, info) => {
     return result
 }
 
+
+const getTotalCreditsByCustomerId = async (customerId = null) => {
+    let totalCredits = 0
+    let credits = null;
+    if ( customerId ){
+        credits = await dbClient.db(dbName).collection("customer_credits").aggregate([
+            { $match : { customerId: new ObjectId(customerId)}},
+            {
+                $group: {
+                    _id: null,
+                    total: {
+                        $sum: "$amount"
+                    }
+                }
+            },
+        ]).toArray();
+    } else {
+        credits = await dbClient.db(dbName).collection("customer_credits").aggregate([
+            {
+                $group: {
+                    _id: null,
+                    total: {
+                        $sum: "$amount"
+                    }
+                }
+            },
+        ]).toArray();
+    }
+
+    if ( credits && credits.length > 0 ){
+        totalCredits = credits[0].total
+    }
+
+    return totalCredits;
+}
+
+const getTotalCredits = async (root, args, context, info) => {
+    return await getTotalCreditsByCustomerId(args.customerId)
+}
+
+const getFilterCustomerId = async (root, args, context, info) => {
+    const { customerId = null } = args;
+
+    let result = {}
+    let totalCredits = await getTotalCreditsByCustomerId(args.customerId);
+    result.totalCount = totalCredits
+    result.data = []
+
+    if ( customerId ){
+        try {
+            const customerCredits = await dbClient.db(dbName).collection("customer_credits").aggregate([
+                {
+                    $lookup:{
+                        from: "customers",
+                        localField : "customerId",
+                        foreignField : "_id",
+                        as : "customer",
+                    }
+                },
+                {
+                    $addFields: {
+                        "companyName": { "$arrayElemAt": [ "$customer.companyName", 0 ] },
+                    }
+                },
+                { $match: { customerId: { $eq: new ObjectId(customerId) } } },
+                { $group: { _id: { companyName: "$companyName"}, customerCount: { $sum : "$amount" } }},
+                { $project: { customerCount: 1, companyName: 1 }}
+            ]).toArray();
+
+            if ( customerCredits.length > 0 ){
+                result.data.push( { name: customerCredits[0]._id.companyName, count: customerCredits[0].customerCount})
+            } else {
+                result.data.push( { name: 'No Customer', count: 0})
+            }
+        } catch (e){
+            result.data.push( { name: 'No Customer', count: 0})
+        }
+
+    }
+
+    return result
+}
+
+
+
+
+const getOfferCreditsByDay = async (root, args, context, info) => {
+    var dayOfMonth = +moment(args.date, "YYYY-MM-DD").format('DD');
+    var month = +moment(args.date, "YYYY-MM-DD").format('MM');
+    var year = +moment(args.date, "YYYY-MM-DD").format('YYYY');
+
+    let credits = await dbClient.db(dbName).collection("customer_credits").aggregate([
+        {
+            $project:
+                {
+                    _id: "$_id",
+                    amount: "$amount",
+                    createdAt: "$createdAt",
+                    year: { $year: "$createdAt" },
+                    month: { $month: "$createdAt" },
+                    day: { $dayOfMonth: "$createdAt" }
+                }
+        },
+        { $match : { day : dayOfMonth, month: month, year: year } },
+    ]).toArray()
+
+    console.log('getOfferCreditsByDay', credits.length)
+
+    return {
+        totalCount: credits.length,
+        data: [
+            {
+                name: args.date,
+                count: credits.length
+            }
+        ]
+    }
+}
+
+const getOfferCreditsByWeekRange = async (root, args, context, info) => {
+
+    let credits = await dbClient.db(dbName).collection("customer_credits").aggregate([
+        {
+            $project:
+                {
+                    _id: "$_id",
+                    amount: "$amount",
+                    createdAt: "$createdAt",
+                    year: { $year: "$createdAt" },
+                    month: { $dateToString: { format: "%m", date: "$createdAt" } },
+                    day: { $dayOfMonth: "$createdAt" },
+                    name: { $dateToString: { format: "%Y-%m", date: "$createdAt" } }
+                }
+        },
+        { $match : { createdAt: { $gte: new Date(args.dateFrom), $lte: new Date(args.dateTo) }}},
+        { $group: {  _id : { name : "$name" }, count: { $sum : 1 }  }},
+        { $sort : { "_id.name": 1 } },
+    ]).toArray()
+
+    console.log('getOfferCreditsByWeekRange', credits)
+
+    const result = {
+        totalCount: credits.reduce(function(count, u){
+            return count + u.count;
+        }, 0),
+        data: credits.map(u => {
+            return { name: u._id.name, count: u.count }
+        })
+    }
+
+    return result
+}
+
+const getOfferCreditsByYearRange = async (root, args, context, info) => {
+
+    let credits = await dbClient.db(dbName).collection("customer_credits").aggregate([
+        {
+            $project:
+                {
+                    _id: "$_id",
+                    amount: "$amount",
+                    createdAt: "$createdAt",
+                    year: { $year: "$createdAt" },
+                }
+        },
+        { $match : { createdAt: { $gte: new Date(args.dateFrom), $lte: new Date(args.dateTo) }}},
+        { $group: {  _id : { year : "$year" }, count: { $sum : 1 }  }},
+        { $sort : { "_id.year": 1 } },
+    ]).toArray()
+
+    console.log('getOfferCreditsByYearRange', credits)
+
+    const result = {
+        totalCount: credits.reduce(function(count, u){
+            return count + u.count;
+        }, 0),
+        data: credits.map(u => {
+            return { name: u._id.year, count: u.count }
+        })
+    }
+
+    return result
+}
+
+const getOfferCreditsByMonth = async (root, args, context, info) => {
+    let year = +moment(args.date, "YYYY-MM-DD").format('YYYY');
+
+    let credits = await dbClient.db(dbName).collection("customer_credits").aggregate([
+        {
+            $project:
+                {
+                    _id: "$_id",
+                    amount: "$amount",
+                    createdAt: "$createdAt",
+                    month: { $dateToString: { format: "%m", date: "$createdAt" } },
+                    year: { $year: "$createdAt" },
+                }
+        },
+        { $match : { year: { $eq: year }}},
+        { $group: {  _id : { month : "$month" }, count: { $sum : 1 }  }},
+        { $sort : { "_id.month": 1 } },
+    ]).toArray()
+
+    console.log('getOfferCreditsByMonth', credits)
+
+    const result = {
+        totalCount: credits.reduce(function(count, u){
+            return count + u.count;
+        }, 0),
+        data: credits.map(u => {
+            return { name: u._id.month, count: u.count }
+        })
+    }
+
+    return result
+}
+
 module.exports = {
     queries: {
         getTotalLooks,
@@ -480,6 +697,13 @@ module.exports = {
         getSignupsCountByWeekRange,
         getSignupsCountByYearRange,
         getSignupsCountByMonth,
+
+        getTotalCredits,
+        getFilterCustomerId,
+        getOfferCreditsByDay,
+        getOfferCreditsByWeekRange,
+        getOfferCreditsByYearRange,
+        getOfferCreditsByMonth
     },
 
 }
