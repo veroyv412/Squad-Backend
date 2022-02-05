@@ -514,35 +514,30 @@ const getFilterCustomerId = async (root, args, context, info) => {
     result.data = []
 
     if ( customerId ){
-        try {
-            const customerCredits = await dbClient.db(dbName).collection("customer_credits").aggregate([
-                {
-                    $lookup:{
-                        from: "customers",
-                        localField : "customerId",
-                        foreignField : "_id",
-                        as : "customer",
-                    }
-                },
-                {
-                    $addFields: {
-                        "companyName": { "$arrayElemAt": [ "$customer.companyName", 0 ] },
-                    }
-                },
-                { $match: { customerId: { $eq: new ObjectId(customerId) } } },
-                { $group: { _id: { companyName: "$companyName"}, customerCount: { $sum : "$amount" } }},
-                { $project: { customerCount: 1, companyName: 1 }}
-            ]).toArray();
+        const customerCredits = await dbClient.db(dbName).collection("customer_credits").aggregate([
+            {
+                $lookup:{
+                    from: "customers",
+                    localField : "customerId",
+                    foreignField : "_id",
+                    as : "customer",
+                }
+            },
+            {
+                $addFields: {
+                    "companyName": { "$arrayElemAt": [ "$customer.companyName", 0 ] },
+                }
+            },
+            { $match: { customerId: { $eq: new ObjectId(customerId) } } },
+            { $group: { _id: { companyName: "$companyName"}, customerCount: { $sum : "$amount" } }},
+            { $project: { customerCount: 1, companyName: 1 }}
+        ]).toArray();
 
-            if ( customerCredits.length > 0 ){
-                result.data.push( { name: customerCredits[0]._id.companyName, count: customerCredits[0].customerCount})
-            } else {
-                result.data.push( { name: 'No Customer', count: 0})
-            }
-        } catch (e){
-            result.data.push( { name: 'No Customer', count: 0})
+        if ( customerCredits.length > 0 ){
+            result.data.push( { name: customerCredits[0]._id.companyName, count: customerCredits[0].customerCount})
+        } else {
+            //result.data.push( { name: 'Other', count: 0})
         }
-
     }
 
     return result
