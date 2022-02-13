@@ -183,6 +183,7 @@ const typeDefs = gql`
         questions:[String]
         offerType:String
         amount: Int
+        role: String
     }
     
     input QuestionInput {
