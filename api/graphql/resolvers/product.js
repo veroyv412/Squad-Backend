@@ -24,7 +24,7 @@ const getProducts = async (root, args, context, info) => {
                 from: "brands",
                 localField : "brandId",
                 foreignField : "_id",
-                as : "brand",
+                as : "brands",
             }
         },
         {
@@ -32,7 +32,7 @@ const getProducts = async (root, args, context, info) => {
                 from: "categories",
                 localField : "categoryId",
                 foreignField : "_id",
-                as : "category"
+                as : "categories"
             }
         },
         {
