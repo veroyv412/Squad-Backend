@@ -35,13 +35,38 @@ const getProducts = async (root, args, context, info) => {
                 as : "category"
             }
         },
-        { $match : find }
+        {
+            $lookup:{
+                from: "customers",
+                localField : "customerId",
+                foreignField : "_id",
+                as : "customers",
+                pipeline: [
+                    {
+                        $lookup:{
+                            from: "users",
+                            localField : "userId",
+                            foreignField : "_id",
+                            as : "users"
+                        }
+                    },
+                    {
+                        $addFields: {
+                            "user": { "$arrayElemAt": [ "$users", 0 ] },
+                        }
+                    }
+                ],
+            }
+        },
+        { $match : find },
+        {
+            $addFields: {
+                "brand": { "$arrayElemAt": [ "$brands", 0 ] },
+                "category": { "$arrayElemAt": [ "$categories", 0 ] },
+                "customer": { "$arrayElemAt": [ "$customers", 0 ] },
+            }
+        },
     ]).toArray();
-
-    for ( let product of products ){
-        product.brand = product.brand[0];
-        product.category = product.category[0];
-    }
 
     return products;
 }
