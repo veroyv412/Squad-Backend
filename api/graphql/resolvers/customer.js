@@ -579,16 +579,12 @@ const saveFeedback =  async (parent, args) => {
         const customer = await dbClient.db(dbName).collection("customers").findOne({_id: new ObjectId(args.data.customerId)});
         const availableCredits = customer.availableCredits ? customer.availableCredits - totalAmount : 0
 
-        //Lets update ONLY if the customer is creating the offer
-        if ( args.data.role === 'customer' ){
-            await dbClient.db(dbName).collection("customers").updateOne(
-                { _id: new ObjectId(args.data.customerId) },
-                {
-                    $set: { availableCredits: availableCredits },
-                    $currentDate: { updatedAt: true }
-                });
-
-        }
+        await dbClient.db(dbName).collection("customers").updateOne(
+            { _id: new ObjectId(args.data.customerId) },
+            {
+                $set: { availableCredits: availableCredits },
+                $currentDate: { updatedAt: true }
+            });
 
         const _feedback = await dbClient.db(dbName).collection('customer_feedback').insertOne(feedBack);
 
