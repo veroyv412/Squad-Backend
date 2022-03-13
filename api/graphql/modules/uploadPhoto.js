@@ -98,6 +98,7 @@ const typeDefs = gql`
         userLikes: [String]
         member: SearchUser
         homepage: Boolean
+        approved: Boolean
     }
 
     type BrandUpload {
