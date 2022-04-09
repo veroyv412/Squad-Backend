@@ -1,6 +1,7 @@
 const NotificationOfferCreated = require('./notificationOfferCreated')
 const NotificationOfferEarned = require('./notificationOfferEarned')
 const NotificationSuccessfulUpload = require('./notificationSuccessfulUpload')
+const NotificationPendingUpload = require('./notificationPendingUpload')
 const NotificationFollowMember = require('./notificationFollowMember')
 const NotificationSuccessfulDisbursement = require('./notificationSuccessfulDisbursement')
 
@@ -16,6 +17,10 @@ class NotificationFactory {
 
         if (type === 'member_successful_upload') {
             return new NotificationSuccessfulUpload()
+        }
+
+        if (type === 'member_pending_upload') {
+            return new NotificationPendingUpload()
         }
 
         if (type === 'member_follow_member') {

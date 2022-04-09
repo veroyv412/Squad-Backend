@@ -9,6 +9,7 @@ const NOTIFICATION_TYPES = {
     OFFER_CREATED: 'offer_created',
     MEMBER_OFFER_EARNED_AMOUNT: 'offer_earned_amount',
     MEMBER_SUCCESSFUL_UPLOAD: 'member_successful_upload',
+    MEMBER_PENDING_UPLOAD: 'member_pending_upload',
     MEMBER_FOLLOW_MEMBER: 'member_follow_member',
     MEMBER_SUCCESSFUL_DISBURSEMENT: 'member_successful_disbursement'
 }
@@ -204,6 +205,29 @@ const createSuccessfulUploadNotificationToMember = async (uploadIds, amount) => 
     }
 }
 
+const createPendingUploadNotificationToMember = async (uploadId) => {
+    try {
+        const _upload = await dbClient.db(dbName).collection("uploads")
+            .findOne({ _id: new ObjectId(uploadId) });
+
+        const data = {
+            type: NOTIFICATION_TYPES.MEMBER_PENDING_UPLOAD,
+            title: "New Upload",
+            message: `You successfully uploaded your look, it is in the process of being verified`,
+            fromUserType: NOTIFICATION_FROM_TO_TYPES.ADMIN,
+            fromUserId: "5ecfb68302d386b70167d566",
+            toUserType: NOTIFICATION_FROM_TO_TYPES.MEMBER,
+            toUserId: _upload.memberId,
+            externalId: _upload._id,
+        }
+
+        console.log('You successfully uploaded your look, it is in the process of being verified ', data)
+        await addNotification(data)
+    } catch (e) {
+        return e;
+    }
+}
+
 const createSuccessfulDisbursedEarningNotificationToMember = async (userId, externalId, note) => {
     const data = {
         type: NOTIFICATION_TYPES.MEMBER_SUCCESSFUL_DISBURSEMENT,
@@ -250,6 +274,7 @@ module.exports = {
         createAnswerFeedbackEarnedNotificationToMember,
         createSuccessfulUploadNotificationToMember,
         createFollowNotificationToMember,
-        createSuccessfulDisbursedEarningNotificationToMember
+        createSuccessfulDisbursedEarningNotificationToMember,
+        createPendingUploadNotificationToMember
     }
 }

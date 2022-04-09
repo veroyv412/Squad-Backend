@@ -2,6 +2,7 @@ const { dbClient, dbName } = require('../../config/mongo');
 const ObjectId = require('mongodb').ObjectId;
 
 const compensationResolvers = require('../resolvers/compensation');
+const notificationResolvers = require('../resolvers/notification');
 
 const _ = require('lodash');
 const { union } = require('lodash');
@@ -596,6 +597,8 @@ const addUploadedPhoto =  async (parent, args) => {
                 await compensationResolvers.helper.compensateApprovedProduct(upload.insertedId.toString(), new Date())
             }
         }
+
+        await notificationResolvers.helper.createPendingUploadNotificationToMember(upload.insertedId.toString())
 
         return upload.insertedId.toString();
 
