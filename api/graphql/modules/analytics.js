@@ -5,7 +5,8 @@ const analyticsResolvers = require('../resolvers/analytics')
 const typeDefs = gql`
     extend type Query {
       getTotalLooks: Int
-      getFilterLooksByBrandCategoryProduct(brandId:ID, categoryId:ID, productId: ID, userId: ID): analyticCountType
+      getCustomerTotalLooks(customerId:ID): Int
+      getFilterLooksByBrandCategoryProduct(brandId:ID, categoryId:ID, productId: ID, userId: ID, customerId: ID): analyticCountType
       getLooksCountByDay(date: Date): analyticCountType
       getLooksCountByWeekRange(dateFrom: Date, dateTo: Date): analyticCountType
       getLooksCountByYearRange(dateFrom: Date, dateTo: Date): analyticCountType

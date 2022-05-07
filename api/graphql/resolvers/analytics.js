@@ -11,13 +11,44 @@ const getTotalLooks = async (root, args, context, info) => {
     return uploads;
 }
 
+const getCustomerTotalLooks = async (root, args, context, info) => {
+    const uploads = await dbClient.db(dbName).collection("uploads").aggregate([
+        {
+            $lookup:{
+                from: "products",
+                localField : "productId",
+                foreignField : "_id",
+                as : "product"
+            }
+        },
+        { $match : { "product.customerId" : new ObjectId(args.customerId) } }
+    ]).toArray();
+
+    return uploads.length;
+}
+
 const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) => {
-    let { brandId, categoryId, productId, userId } = args;
+    let { brandId, categoryId, productId, userId, customerId } = args;
 
     let result = {}
     let totalUploads = await dbClient.db(dbName).collection("uploads").find().count();
     if ( userId ){
         totalUploads = await dbClient.db(dbName).collection("uploads").find({ memberId: new ObjectId(userId) }).count();
+    }
+
+    if ( customerId ){
+        const uploads = await dbClient.db(dbName).collection("uploads").aggregate([
+            {
+                $lookup:{
+                    from: "products",
+                    localField : "productId",
+                    foreignField : "_id",
+                    as : "product"
+                }
+            },
+            { $match : { "product.customerId" : new ObjectId(args.customerId) } }
+        ]).toArray();
+        totalUploads = uploads.length;
     }
 
     result.totalCount = totalUploads
@@ -680,6 +711,7 @@ const getOfferCreditsByMonth = async (root, args, context, info) => {
 module.exports = {
     queries: {
         getTotalLooks,
+        getCustomerTotalLooks,
         getFilterLooksByBrandCategoryProduct,
         getLooksCountByDay,
         getLooksCountByWeekRange,
