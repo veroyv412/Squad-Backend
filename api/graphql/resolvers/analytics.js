@@ -28,7 +28,7 @@ const getCustomerTotalLooks = async (root, args, context, info) => {
 }
 
 const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) => {
-    let { brandId, categoryId, productId, userId, customerId } = args;
+    let { brandId, categoryId, productId, userId, customerId, ageFrom, ageTo, location } = args;
 
     let result = {}
     let totalUploads = await dbClient.db(dbName).collection("uploads").find().count();
@@ -145,6 +145,58 @@ const getFilterLooksByBrandCategoryProduct = async (root, args, context, info) =
             result.data.push( { name: productUploads[0]._id, count: productUploads[0].productCount})
         } else {
             result.data.push( { name: 'No Product', count: 0})
+        }
+    }
+
+    let userFind = [];
+    if ( location && location != '-'  ){
+        userFind.push( { '$or': [{ "user.hometownCity": new RegExp(location) }, { "user.hometownState": new RegExp(location)}] });
+    }
+
+    if ( ageFrom != '-' && ageTo != '-'){
+        userFind.push( { "age": { $gte: ageFrom, $lte: ageTo } });
+    }
+
+    if ( ageFrom != '-' && ageTo == '-' ){
+        userFind.push( { "age": { $gte: ageFrom } });
+    }
+
+    if ( ageFrom == '-' && ageTo  != '-'  ){
+        userFind.push( { "age": { $lte: ageTo } });
+    }
+
+    console.log('args', args)
+    console.log('userFind', userFind)
+    if ( userFind.length ){
+        if ( userId ){
+            userFind['memberId'] = { $eq: new ObjectId(userId) }
+        }
+
+        const memberUploads = await dbClient.db(dbName).collection("uploads").aggregate([
+            {
+                $lookup:{
+                    from: "users",
+                    localField : "memberId",
+                    foreignField : "_id",
+                    as : "user",
+                }
+            },
+            {
+                $addFields: {
+                    "displayName": { "$arrayElemAt": [ "$user.displayName", 0 ] },
+                    "age": { "$arrayElemAt": [ "$user.age", 0 ] },
+                    "location": { "$arrayElemAt": [ "$user.hometownCity", 0 ] },
+                    "user": { "$arrayElemAt": [ "$user", 0 ] },
+                }
+            },
+            { $match: userFind[0] },
+            { $group: { _id: "$age", memberCount: { $sum : 1 } }},
+            { $project: { memberCount: 1, age : 1 }}
+        ]).toArray();
+        if ( memberUploads.length > 0 ){
+            result.data.push( { name: memberUploads[0]._id, count: memberUploads[0].memberCount})
+        } else {
+            result.data.push( { name: 'No Member', count: 0})
         }
     }
 

@@ -6,7 +6,7 @@ const typeDefs = gql`
     extend type Query {
       getTotalLooks: Int
       getCustomerTotalLooks(customerId:ID): Int
-      getFilterLooksByBrandCategoryProduct(brandId:ID, categoryId:ID, productId: ID, userId: ID, customerId: ID): analyticCountType
+      getFilterLooksByBrandCategoryProduct(brandId:ID, categoryId:ID, productId: ID, userId: ID, customerId: ID, ageFrom: String, ageTo: String, location: String): analyticCountType
       getLooksCountByDay(date: Date): analyticCountType
       getLooksCountByWeekRange(dateFrom: Date, dateTo: Date): analyticCountType
       getLooksCountByYearRange(dateFrom: Date, dateTo: Date): analyticCountType
