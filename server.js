@@ -45,6 +45,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(logger.pre);
 
 const server = new ApolloServer({
+    context: async ({ req, res }) => {
+        // Get the user token from the headers.
+        const token = req.headers.authorization || '';
+
+        // Add the user to the context
+        return { token };
+    },
     modules: [
         require('./api/graphql/modules/user'),
         require('./api/graphql/modules/customer'),
@@ -54,7 +61,8 @@ const server = new ApolloServer({
         require('./api/graphql/modules/product'),
         require('./api/graphql/modules/compensation'),
         require('./api/graphql/modules/notification'),
-        require('./api/graphql/modules/analytics')
+        require('./api/graphql/modules/analytics'),
+        require('./api/graphql/modules/authentication')
     ]
 });
 
