@@ -6,6 +6,7 @@ const { AuthenticationError } = require('apollo-server');
 
 class RealmApiClient {
     accessToken = null;
+    refreshToken = null;
 
     static async getUserFromGraphQL(token) {
         const data = JSON.stringify({
@@ -57,7 +58,8 @@ class RealmApiClient {
 
             if ( response.status === 200 ){
                 this.accessToken = response.data.access_token
-                return this.accessToken
+                this.refreshToken = response.data.refresh_token
+                return { access_token: this.accessToken, refresh_token: this.refreshToken }
             }
         } catch (e) {
             throw e.message;
