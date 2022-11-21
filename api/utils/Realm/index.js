@@ -1,6 +1,8 @@
 const axios = require('axios');
 const moment = require('moment'); // require
 const _ = require('lodash');
+const { AuthenticationError } = require('apollo-server');
+
 
 class RealmApiClient {
     accessToken = null;
@@ -35,7 +37,7 @@ class RealmApiClient {
                 return response.data.data.users[0]
             }
         } catch (e) {
-            throw e.message;
+            throw new AuthenticationError(e.message);
         }
     }
 
