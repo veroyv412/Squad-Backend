@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const express = require('express');
-const { ApolloServer } = require('apollo-server-express');
+const { ApolloServer } = require('apollo-server');;
 
 const { dbClient } = require('./api/config/mongo');
 
@@ -66,8 +66,17 @@ const server = new ApolloServer({
     ]
 });
 
-server.applyMiddleware({ app, path: '/api/graphql' });
+//server.applyMiddleware({ app, path: '/api/graphql' });
 
-app.listen({ port: process.env.PORT }, () => {
-    dbClient.connect().then((client) => { console.log('Apollo Server on http://localhost:8000/api/graphql'); console.log('MongoDB Connected'); }).catch(err => { console.log(err) });
+server.listen({ port: process.env.PORT }).then(({url}) => {
+    console.log('Apollo Server on ' + url);
+
+    dbClient.connect().then((client) => {
+        console.log('MongoDB Connected');
+    }).catch(err => { console.log(err) });
 });
+
+/*server.listen({ port: process.env.PORT }, () => {
+    dbClient.connect().then((client) => { console.log('Apollo Server on http://localhost:8000/api/graphql');
+    console.log('MongoDB Connected'); }).catch(err => { console.log(err) });
+});*/
