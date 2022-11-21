@@ -9,6 +9,7 @@ const typeDefs = gql`
     
     type AccessTokenObject {
         access_token: String
+        refresh_token: String
         error: String
     }
     
