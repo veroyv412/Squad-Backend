@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const express = require('express');
-const { ApolloServer } = require('apollo-server');;
+const { ApolloServer } = require('apollo-server-express');;
 
 const { dbClient } = require('./api/config/mongo');
 
@@ -24,59 +24,65 @@ const database = firebaseAdmin.firestore();
 const settings = {timestampsInSnapshots: true};
 database.settings(settings);
 
+const startServer = async () => {
 
-/*
-  The above code initializes firebase-admin globally
-*/
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    /*
+      The above code initializes firebase-admin globally
+    */
+    app.use((req, res, next) => {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers",
+            "Origin, X-Requested-With, Content-Type, Accept, Authorization");
 
-    if (req.method === "OPTIONS") {
-        res.header('Access-Control-Allow-Methods', 'POST,GET');
-        return res.status(200).json({});
-    }
-    next();
-});
+        if (req.method === "OPTIONS") {
+            res.header('Access-Control-Allow-Methods', 'POST,GET');
+            return res.status(200).json({});
+        }
+        next();
+    });
 
-app.use(cors());
-app.use(express.urlencoded({ extended: false }));
-app.use(logger.pre);
+    app.use(cors());
+    app.use(express.urlencoded({ extended: false }));
+    app.use(logger.pre);
 
-const server = new ApolloServer({
-    context: async ({ req, res }) => {
-        // Get the user token from the headers.
-        const token = req.headers.authorization || '';
+    const server = new ApolloServer({
+        context: async ({ req, res }) => {
+            // Get the user token from the headers.
+            const token = req.headers.authorization || '';
 
-        // Add the user to the context
-        return { token };
-    },
-    modules: [
-        require('./api/graphql/modules/user'),
-        require('./api/graphql/modules/customer'),
-        require('./api/graphql/modules/brand'),
-        require('./api/graphql/modules/category'),
-        require('./api/graphql/modules/uploadPhoto'),
-        require('./api/graphql/modules/product'),
-        require('./api/graphql/modules/compensation'),
-        require('./api/graphql/modules/notification'),
-        require('./api/graphql/modules/analytics'),
-        require('./api/graphql/modules/authentication')
-    ]
-});
+            // Add the user to the context
+            return { token };
+        },
+        modules: [
+            require('./api/graphql/modules/user'),
+            require('./api/graphql/modules/customer'),
+            require('./api/graphql/modules/brand'),
+            require('./api/graphql/modules/category'),
+            require('./api/graphql/modules/uploadPhoto'),
+            require('./api/graphql/modules/product'),
+            require('./api/graphql/modules/compensation'),
+            require('./api/graphql/modules/notification'),
+            require('./api/graphql/modules/analytics'),
+            require('./api/graphql/modules/authentication')
+        ]
+    });
 
-//server.applyMiddleware({ app, path: '/api/graphql' });
+    //await server.start()
 
-server.listen({ port: process.env.PORT }).then(({url}) => {
-    console.log('Apollo Server on ' + url);
+    server.applyMiddleware({ app, path: '/api/graphql' });
 
-    dbClient.connect().then((client) => {
-        console.log('MongoDB Connected');
-    }).catch(err => { console.log(err) });
-});
+    /*app.listen({ port: process.env.PORT }).then(({url}) => {
+        console.log('Apollo Server on ' + url);
 
-/*server.listen({ port: process.env.PORT }, () => {
-    dbClient.connect().then((client) => { console.log('Apollo Server on http://localhost:8000/api/graphql');
-    console.log('MongoDB Connected'); }).catch(err => { console.log(err) });
-});*/
+        dbClient.connect().then((client) => {
+            console.log('MongoDB Connected');
+        }).catch(err => { console.log(err) });
+    });*/
+
+    app.listen({ port: process.env.PORT }, () => {
+        dbClient.connect().then((client) => { console.log('Apollo Server on http://localhost:'+process.env.PORT+'/api/graphql');
+            console.log('MongoDB Connected'); }).catch(err => { console.log(err) });
+    });
+}
+
+startServer();
