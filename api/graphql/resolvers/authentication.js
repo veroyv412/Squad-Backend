@@ -12,11 +12,22 @@ const getTokenByEmailAndPassword = async (root, args) => {
     }
 }
 
+const assertAuthenticated = (context) => {
+    try {
+        return RealmApiClient.getUserFromGraphQL(context.token)
+    } catch (e){
+        throw e;
+    }
+};
+
 module.exports = {
     queries: {
         getTokenByEmailAndPassword
     },
     mutations: {
 
+    },
+    helper: {
+        assertAuthenticated
     }
 }

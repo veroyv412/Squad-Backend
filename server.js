@@ -67,17 +67,7 @@ const startServer = async () => {
         ]
     });
 
-    //await server.start()
-
     server.applyMiddleware({ app, path: '/api/graphql' });
-
-    /*app.listen({ port: process.env.PORT }).then(({url}) => {
-        console.log('Apollo Server on ' + url);
-
-        dbClient.connect().then((client) => {
-            console.log('MongoDB Connected');
-        }).catch(err => { console.log(err) });
-    });*/
 
     app.listen({ port: process.env.PORT }, () => {
         dbClient.connect().then((client) => { console.log('Apollo Server on http://localhost:'+process.env.PORT+'/api/graphql');

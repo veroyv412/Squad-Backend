@@ -5,8 +5,11 @@ const jwt = require('jsonwebtoken');
 const moment = require('moment'); // require
 
 const notificationResolvers = require('../resolvers/notification');
+const authenticationResolvers = require('../resolvers/authentication');
 
 const users = async (root, args, context, info) => {
+    //await authenticationResolvers.helper.assertAuthenticated(context)
+
     const usersRef = dbClient.db(dbName).collection("users");
     const users = await usersRef.find({}).toArray();
 
