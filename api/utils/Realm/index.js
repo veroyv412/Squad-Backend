@@ -59,7 +59,7 @@ class RealmApiClient {
             if ( response.status === 200 ){
                 this.accessToken = response.data.access_token
                 this.refreshToken = response.data.refresh_token
-                return { access_token: this.accessToken, refresh_token: this.refreshToken }
+                return { access_token: this.accessToken, refresh_token: this.refreshToken, user_id: response.data.user_id }
             }
         } catch (e) {
             throw e.message;

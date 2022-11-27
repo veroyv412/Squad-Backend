@@ -5,8 +5,8 @@ const realmApi = new RealmApiClient();
 
 const getTokenByEmailAndPassword = async (root, args) => {
     try {
-        const { access_token, refresh_token } = await realmApi.getEmailPasswordAccessToken(args.email, args.password)
-        return { access_token, refresh_token } ;
+        const { access_token, refresh_token, user_id } = await realmApi.getEmailPasswordAccessToken(args.email, args.password)
+        return { access_token, refresh_token, user_id };
     } catch (e){
         throw new AuthenticationError(e);
     }

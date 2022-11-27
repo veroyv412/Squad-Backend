@@ -64,7 +64,20 @@ const startServer = async () => {
             require('./api/graphql/modules/notification'),
             require('./api/graphql/modules/analytics'),
             require('./api/graphql/modules/authentication')
-        ]
+        ],
+        formatResponse: (response, requestContext) => {
+            if (response.data?.getTokenByEmailAndPassword) {
+                const tokenExpireDate = new Date();
+                tokenExpireDate.setDate(tokenExpireDate.getDate() + 1); //+ 1 day
+                requestContext.response.http.headers.append("Set-Cookie",
+                    `accessToken=${response.data.getTokenByEmailAndPassword.access_token}; expires=${tokenExpireDate}`);
+                requestContext.response.http.headers.append("Set-Cookie",
+                    `refreshToken=${response.data.getTokenByEmailAndPassword.access_token}; expires=${tokenExpireDate}`);
+                requestContext.response.http.headers.append("Set-Cookie",
+                    `userId=${response.data.getTokenByEmailAndPassword.user_id}; expires=${tokenExpireDate}`);
+            }
+            return response;
+        },
     });
 
     server.applyMiddleware({ app, path: '/api/graphql' });
