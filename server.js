@@ -25,26 +25,37 @@ const settings = { timestampsInSnapshots: true };
 database.settings(settings);
 
 const startServer = async () => {
-	/*
-      The above code initializes firebase-admin globally
-    */
-	app.use((req, res, next) => {
-		res.header('Access-Control-Allow-Origin', '*');
-		res.header(
-			'Access-Control-Allow-Headers',
-			'Origin, X-Requested-With, Content-Type, Accept, Authorization, Set-Cookie'
-		);
+	app.use(
+		cors({
+			origin: (origin, callback) => {
+				const whitelist = [
+					'http://localhost:8000',
+					'http://localhost:3000',
+					'https://squad-demos.netlify.app',
+					'https://thelookbook.io',
+				];
+				if (whitelist.indexOf(origin) !== -1 || !origin) {
+					callback(null, true);
+				} else {
+					callback(new Error('Not allowed by CORS'));
+				}
+			},
+			allowedHeaders: [
+				'Origin',
+				'X-Requested-With',
+				'Content-Type',
+				'Accept',
+				'Authorization',
+			],
+			methods: ['POST', 'GET'],
+			exposedHeaders: ['Set-Cookie'],
+			credentials: true,
+			optionsSuccessStatus: 200,
+		})
+	);
 
-		if (req.method === 'OPTIONS') {
-			res.header('Access-Control-Allow-Methods', 'POST,GET');
-			return res.status(200).json({});
-		}
-		next();
-	});
-
-	app.use(cors());
 	app.use(express.urlencoded({ extended: false }));
-	// app.use(logger.pre);
+	app.use(logger.pre);
 
 	const server = new ApolloServer({
 		context: async ({ req, res }) => {
@@ -65,7 +76,12 @@ const startServer = async () => {
 		],
 	});
 
-	server.applyMiddleware({ app, path: '/api/graphql' });
+	server.applyMiddleware({
+		app,
+		path: '/api/graphql',
+		// cors logic handled in the `cors()` middleware
+		cors: false,
+	});
 
 	app.listen({ port: process.env.PORT }, () => {
 		dbClient
