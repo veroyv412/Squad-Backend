@@ -3,6 +3,12 @@ const moment = require('moment'); // require
 const _ = require('lodash');
 const { AuthenticationError } = require('apollo-server');
 
+const Realm = require("realm");
+const dotenv = require('dotenv');
+dotenv.config();
+
+const app = new Realm.App({ id: process.env.REALM_APP_NAME })
+
 
 class RealmApiClient {
     accessToken = null;
@@ -64,6 +70,14 @@ class RealmApiClient {
         } catch (e) {
             throw e.message;
         }
+    }
+
+    async registerUser(email, password){
+        await app.emailPasswordAuth.registerUser({ email, password });
+        const credentials = Realm.Credentials.emailPassword(email, password);
+        const user = await app.logIn(credentials);
+
+        return user;
     }
 
     async getAccessToken() {

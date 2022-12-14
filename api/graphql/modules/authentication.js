@@ -14,7 +14,16 @@ const typeDefs = gql`
         error: String
     }
     
-   
+    input RegisterUserInput {
+        email: String
+        password: String
+        displayName: String
+        role: String
+    }
+    
+   extend type Mutation {
+        registerUser(user: RegisterUserInput!): AccessTokenObject!
+    }
 `
 
 const resolvers = {
