@@ -5,10 +5,15 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 
-const uri = process.env.BD_URL || "mongodb+srv://squad:squad123@cluster0-cimt2.mongodb.net/test?retryWrites=true&w=majority";
+const uri = process.env.BD_URL;
 const dbClient = new MongoClient(uri, { useNewUrlParser: true,  useUnifiedTopology: true });
 
+console.log('Backend URI', uri);
+console.log('dbClient', dbClient);
+
 const dbName = process.env.DB_NAME;
+
+console.log('dbName', dbName);
 
 module.exports.dbClient = dbClient;
 module.exports.dbName = dbName;
