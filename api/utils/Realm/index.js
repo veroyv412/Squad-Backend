@@ -77,7 +77,9 @@ class RealmApiClient {
 
   async registerUser(email, password) {
     await app.emailPasswordAuth.registerUser({ email, password });
-    return true;
+    const credentials = Realm.Credentials.emailPassword(email, password);
+    const user = await app.logIn(credentials);
+    return user;
   }
 
   async getAccessToken() {

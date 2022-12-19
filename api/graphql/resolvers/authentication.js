@@ -44,17 +44,29 @@ const assertAuthenticated = (context) => {
   }
 };
 
-const registerUser = async (_, args) => {
+const registerUser = async (_, args, context) => {
+  let isAdmin = false;
+
   try {
     const { email, password, displayName, username } = args.user;
 
     const realmUser = await realmApi.registerUser(email, password);
     const currentDate = new Date();
 
+    const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+
+    if (reqUserId) {
+      const reqDbUser = await dbClient
+        .db(dbName)
+        .collection('users')
+        .findOne({ stitchId: reqUserId });
+      isAdmin = reqDbUser?.role === 'admin';
+    }
+
     let user = {
       stitchId: realmUser.id,
       displayName: displayName,
-      role: 'member',
+      role: isAdmin ? 'customer' : 'member',
       email: email,
       username: username,
       createdAt: currentDate,

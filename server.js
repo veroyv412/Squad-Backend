@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const { ApolloServer } = require('apollo-server-express');
 
 const { dbClient } = require('./api/config/mongo');
@@ -45,7 +46,8 @@ const startServer = async () => {
       exposedHeaders: ['Set-Cookie'],
       credentials: true,
       optionsSuccessStatus: 200,
-    })
+    }),
+    cookieParser()
   );
 
   app.use(express.urlencoded({ extended: false }));
