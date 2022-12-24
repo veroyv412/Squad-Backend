@@ -1,5 +1,5 @@
 const { AuthenticationError } = require('apollo-server');
-const { RealmApiClient } = require('../../utils/Realm')
+const { RealmApiClient } = require('../../utils/Realm');
 const realmApi = new RealmApiClient();
 const { dbClient, dbName } = require('../../config/mongo');
 const sgMail = require('@sendgrid/mail');
@@ -44,58 +44,72 @@ const assertAuthenticated = (context) => {
   }
 };
 
-const registerUser = async (parent, args) => {
-    try {
+const registerUser = async (_, args, context) => {
+  let isAdmin = false;
 
-        const { email, password, displayName, role } = args.user;
-        const realmUser = await realmApi.registerUser(email, password);
+  try {
+    const { email, password, displayName, username } = args.user;
 
-        let user = {
-            stitchId: realmUser.id,
-            displayName: displayName,
-            role: role ? role : 'member',
-            email: email,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
+    const realmUser = await realmApi.registerUser(email, password);
+    const currentDate = new Date();
 
-        await dbClient.db(dbName).collection('users').insertOne(user);
+    const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
 
-        let token = jwt.sign({id: realmUser.id}, 'squadConfirmationEmailHashThatIsSuperSecure', { expiresIn: '1h' })
-
-        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-        const msg = {
-            to: user.email,
-            from: {
-                name: "The Lookbook Team",
-                email: "fred@teammysquad.com"
-            },
-            templateId: "d-b4712b8325e74eab98976c4ba0bcd5b9",
-            dynamic_template_data: {
-                link: process.env.FRONTEND_URL + `confirm-email/${token}`,
-                name: user.displayName
-            }
-        };
-
-        console.log(msg)
-
-        await sgMail.send(msg);
-
-        return await realmApi.getEmailPasswordAccessToken(email, password)
-    } catch (e){
-        throw e;
+    if (reqUserId) {
+      const reqDbUser = await dbClient
+        .db(dbName)
+        .collection('users')
+        .findOne({ stitchId: reqUserId });
+      isAdmin = reqDbUser?.role === 'admin';
     }
-}
 
+    let user = {
+      stitchId: realmUser.id,
+      displayName: displayName,
+      role: isAdmin ? 'customer' : 'member',
+      email: email,
+      username: username,
+      createdAt: currentDate,
+      updatedAt: currentDate,
+    };
+
+    await dbClient.db(dbName).collection('users').insertOne(user);
+
+    let token = jwt.sign({ id: realmUser.id }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    const msg = {
+      to: user.email,
+      from: {
+        name: 'The Lookbook Team',
+        email: 'fred@teammysquad.com',
+      },
+      templateId: 'd-b4712b8325e74eab98976c4ba0bcd5b9',
+      dynamic_template_data: {
+        link: process.env.FRONTEND_URL + `confirm-email/${token}`,
+        name: user.displayName,
+      },
+    };
+
+    await sgMail.send(msg);
+
+    return true;
+  } catch (e) {
+    throw e;
+  }
+};
 
 module.exports = {
-    queries: {
-        getTokenByEmailAndPassword
-    },
-    mutations: {
-        registerUser
-    },
-    helper: {
-        assertAuthenticated
-    }
-}
+  queries: {
+    getTokenByEmailAndPassword,
+  },
+  mutations: {
+    registerUser,
+  },
+  helper: {
+    assertAuthenticated,
+  },
+};
