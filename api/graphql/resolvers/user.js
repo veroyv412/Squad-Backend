@@ -252,6 +252,8 @@ const getLookbook = async (root, { id }, context, info) => {
 };
 
 const getUserFeedbacks = async (root, args, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id)
+
   let customerFeedbacksUploads = await dbClient
     .db(dbName)
     .collection('customer_feedback')
