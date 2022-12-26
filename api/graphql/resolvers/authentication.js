@@ -102,6 +102,76 @@ const registerUser = async (_, args, context) => {
   }
 };
 
+const assertIsLoggedIn = async (context) => {
+  try {
+    if ( !context.req.cookies.access_token ){
+      throw new Error('Access Token not present')
+    }
+
+    const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+    const reqDbUser = await dbClient
+        .db(dbName)
+        .collection('users')
+        .findOne({ stitchId: reqUserId });
+    if ( !reqDbUser ){
+      throw new Error('User not logged in or User not found')
+    }
+  } catch (e) {
+    throw e;
+  }
+}
+
+const assertIsLoggedInAsAdminOrProfileId = async (context, id) => {
+  try {
+    if ( !context.req.cookies.access_token ){
+      throw new Error('Access Token not present')
+    }
+
+    const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+    const reqDbUser = await dbClient
+        .db(dbName)
+        .collection('users')
+        .findOne({ stitchId: reqUserId });
+    if ( !reqDbUser ){
+      throw new Error('User not logged in or User not found')
+    }
+
+    const isAdmin = reqDbUser?.role === 'admin';
+    const isSameProfile = reqDbUser?._id.toString() === id;
+    if ( isAdmin || isSameProfile ){
+      return true
+    }
+
+    throw new Error('User does not have permission to perform that action.')
+  } catch (e) {
+    throw e;
+  }
+}
+
+const assertIsLoggedInAsAdmin = async (context) => {
+  try {
+    if ( !context.req.cookies.access_token ){
+      throw new Error('Access Token not present')
+    }
+
+    const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+    const reqDbUser = await dbClient
+        .db(dbName)
+        .collection('users')
+        .findOne({ stitchId: reqUserId });
+    if ( !reqDbUser ){
+      throw new Error('User not logged in or User not found')
+    }
+
+    const isAdmin = reqDbUser?.role === 'admin';
+    if ( !isAdmin ){
+      throw new Error('User does not have Admin credentials')
+    }
+  } catch (e) {
+    throw e;
+  }
+}
+
 module.exports = {
   queries: {
     getTokenByEmailAndPassword,
@@ -111,5 +181,8 @@ module.exports = {
   },
   helper: {
     assertAuthenticated,
+    assertIsLoggedIn,
+    assertIsLoggedInAsAdmin,
+    assertIsLoggedInAsAdminOrProfileId
   },
 };
