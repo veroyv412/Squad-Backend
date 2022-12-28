@@ -45,6 +45,7 @@
     "winston": "3.2.1"
   },
   "devDependencies": {
+    "@babel/eslint-parser": "^7.19.1",
     "lint-staged": "^13.1.0",
     "nodemon": "^2.0.20"
   }
