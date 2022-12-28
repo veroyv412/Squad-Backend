@@ -144,7 +144,7 @@ const assertIsLoggedInAsAdminOrProfileId = async (context, id) => {
       return true;
     }
 
-    throw new Error('Frobidden.');
+    throw new Error('Forbidden');
   } catch (e) {
     throw e;
   }
