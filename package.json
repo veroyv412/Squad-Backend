@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server",
     "dev": "nodemon server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "git:precommit": "lint-staged",
+    "prepare": "husky install"
   },
   "keywords": [],
   "author": "",
@@ -28,7 +30,9 @@
     "firebase-functions": "^3.2.0",
     "graphql": "^14.7.0",
     "graphql-iso-date": "^3.6.1",
+    "husky": "^8.0.2",
     "jsonwebtoken": "^8.5.1",
+    "lint-staged": "^13.1.0",
     "lodash": "^4.17.20",
     "moment": "^2.24.0",
     "mongodb": "^3.3.3",

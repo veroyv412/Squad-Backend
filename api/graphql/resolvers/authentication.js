@@ -104,73 +104,77 @@ const registerUser = async (_, args, context) => {
 
 const assertIsLoggedIn = async (context) => {
   try {
-    if ( !context.req.cookies.access_token ){
-      throw new Error('Access Token not present')
+    if (!context.req.cookies.access_token) {
+      throw new Error('Unauthorized');
     }
 
     const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
     const reqDbUser = await dbClient
-        .db(dbName)
-        .collection('users')
-        .findOne({ stitchId: reqUserId });
-    if ( !reqDbUser ){
-      throw new Error('User not logged in or User not found')
+      .db(dbName)
+      .collection('users')
+      .findOne({ stitchId: reqUserId });
+
+    if (!reqDbUser) {
+      throw new Error('User not found');
     }
   } catch (e) {
     throw e;
   }
-}
+};
 
 const assertIsLoggedInAsAdminOrProfileId = async (context, id) => {
   try {
-    if ( !context.req.cookies.access_token ){
-      throw new Error('Access Token not present')
+    if (!context.req.cookies.access_token) {
+      throw new Error('Unauthorized');
     }
 
     const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
     const reqDbUser = await dbClient
-        .db(dbName)
-        .collection('users')
-        .findOne({ stitchId: reqUserId });
-    if ( !reqDbUser ){
-      throw new Error('User not logged in or User not found')
+      .db(dbName)
+      .collection('users')
+      .findOne({ stitchId: reqUserId });
+    if (!reqDbUser) {
+      throw new Error('User not found');
     }
 
     const isAdmin = reqDbUser?.role === 'admin';
-    const isSameProfile = reqDbUser?._id.toString() === id;
-    if ( isAdmin || isSameProfile ){
-      return true
+     const isSameProfile = reqUserId === id;
+
+    if (isAdmin || isSameProfile) {
+      return true;
     }
 
-    throw new Error('User does not have permission to perform that action.')
+    throw new Error('Frobidden.');
   } catch (e) {
     throw e;
   }
-}
+};
 
 const assertIsLoggedInAsAdmin = async (context) => {
   try {
-    if ( !context.req.cookies.access_token ){
-      throw new Error('Access Token not present')
+    if (!context.req.cookies.access_token) {
+      throw new Error('Unauthorized');
     }
 
     const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
-    const reqDbUser = await dbClient
-        .db(dbName)
-        .collection('users')
-        .findOne({ stitchId: reqUserId });
-    if ( !reqDbUser ){
-      throw new Error('User not logged in or User not found')
-    }
 
+    const reqDbUser = await dbClient
+      .db(dbName)
+      .collection('users')
+      .findOne({ stitchId: reqUserId });
+
+    if (!reqDbUser) {
+      throw new Error('User not found');
+    }
     const isAdmin = reqDbUser?.role === 'admin';
-    if ( !isAdmin ){
-      throw new Error('User does not have Admin credentials')
+
+    if (!isAdmin) {
+      throw new Error('Forbidden');
     }
   } catch (e) {
     throw e;
   }
-}
+};
 
 module.exports = {
   queries: {
@@ -183,6 +187,6 @@ module.exports = {
     assertAuthenticated,
     assertIsLoggedIn,
     assertIsLoggedInAsAdmin,
-    assertIsLoggedInAsAdminOrProfileId
+    assertIsLoggedInAsAdminOrProfileId,
   },
 };

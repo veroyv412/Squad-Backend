@@ -8,7 +8,7 @@ const notificationResolvers = require('../resolvers/notification');
 const authenticationResolvers = require('../resolvers/authentication');
 
 const users = async (root, args, context, info) => {
-  await authenticationResolvers.helper.assertIsLoggedIn(context)
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   const usersRef = dbClient.db(dbName).collection('users');
   const users = await usersRef.find({}).toArray();
@@ -252,7 +252,7 @@ const getLookbook = async (root, { id }, context, info) => {
 };
 
 const getUserFeedbacks = async (root, args, context, info) => {
-  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id)
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
 
   let customerFeedbacksUploads = await dbClient
     .db(dbName)
