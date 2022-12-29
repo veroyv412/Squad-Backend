@@ -1,0 +1,17 @@
+{
+  "root": true,
+  "parser": "@babel/eslint-parser",
+  "parserOptions": {
+    "requireConfigFile": false,
+    "ecmaVersion": 2018,
+    "sourceType": "module"
+  },
+  "extends": "eslint-config-prettier",
+  "env": {
+    "es6": true
+  },
+  "rules": {
+    "max-len": ["warn", { "code": 100 }],
+    "no-unused-vars": ["warn"]
+  }
+}

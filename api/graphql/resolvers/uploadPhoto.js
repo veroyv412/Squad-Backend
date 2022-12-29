@@ -3,6 +3,7 @@ const ObjectId = require('mongodb').ObjectId;
 
 const compensationResolvers = require('../resolvers/compensation');
 const notificationResolvers = require('../resolvers/notification');
+const authenticationResolvers = require('../resolvers/authentication');
 
 const _ = require('lodash');
 const { union } = require('lodash');
@@ -199,6 +200,8 @@ const getUserUploads =  async (root, args, context, info) => {
     if ( !args.userId ){
         return []
     }
+
+    await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id)
 
     const uploads = await dbClient.db(dbName).collection("uploads").aggregate([
         {
