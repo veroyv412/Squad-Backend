@@ -138,7 +138,7 @@ const assertIsLoggedInAsAdminOrProfileId = async (context, id) => {
     }
 
     const isAdmin = reqDbUser?.role === 'admin';
-    const isSameProfile = reqUserId === id;
+    const isSameProfile = reqDbUser._id.toString() === id;
 
     if (isAdmin || isSameProfile) {
       return true;

@@ -11,6 +11,11 @@ const { union } = require('lodash');
 const productHelper = require('./product')
 
 const getUploadedPhotos = async (root, args, context, info) => {
+    await authenticationResolvers.helper.assertIsLoggedIn(context);
+
+    let limit = args.limit || 10;
+    let offset = args.page || 1;
+    offset = (offset-1) * limit;
 
     const uploads = await dbClient.db(dbName).collection("uploads").aggregate([
         {
@@ -36,7 +41,9 @@ const getUploadedPhotos = async (root, args, context, info) => {
                 foreignField : "_id",
                 as : "category"
             }
-        }
+        },
+        { $skip: offset },
+        { $limit: limit }
     ]).toArray();
 
     for ( let upload of uploads ){

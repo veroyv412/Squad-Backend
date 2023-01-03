@@ -189,7 +189,14 @@ const getFollowings = async (root, { id }, context, info) => {
   return followers;
 };
 
-const getLookbookByUserId = async (root, { userId }, context, info) => {
+const getLookbookByUserId = async (root, { userId, limit, page }, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, userId);
+
+  let _limit = limit || 10;
+  let offset = page || 1;
+  offset = (offset-1) * _limit;
+
+
   const lookbook = await dbClient
     .db(dbName)
     .collection('users_lookbook')
@@ -236,6 +243,8 @@ const getLookbookByUserId = async (root, { userId }, context, info) => {
         },
       },
       { $match: { userId: new ObjectId(userId) } },
+      { $skip: offset },
+      { $limit: limit }
     ])
     .toArray();
 
@@ -253,6 +262,10 @@ const getLookbook = async (root, { id }, context, info) => {
 
 const getUserFeedbacks = async (root, args, context, info) => {
   await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+
+  let limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset-1) * limit;
 
   let customerFeedbacksUploads = await dbClient
     .db(dbName)
@@ -309,6 +322,8 @@ const getUserFeedbacks = async (root, args, context, info) => {
       },
       { $match: { 'uploads.member._id': new ObjectId(args.id) } },
       { $match: { 'feedbackAnswers.0': { $exists: false } } },
+      { $skip: offset },
+      { $limit: limit }
     ])
     .toArray();
 
