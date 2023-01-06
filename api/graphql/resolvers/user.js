@@ -194,8 +194,7 @@ const getLookbookByUserId = async (root, { userId, limit, page }, context, info)
 
   let _limit = limit || 10;
   let offset = page || 1;
-  offset = (offset-1) * _limit;
-
+  offset = (offset - 1) * _limit;
 
   const lookbook = await dbClient
     .db(dbName)
@@ -244,7 +243,7 @@ const getLookbookByUserId = async (root, { userId, limit, page }, context, info)
       },
       { $match: { userId: new ObjectId(userId) } },
       { $skip: offset },
-      { $limit: limit }
+      { $limit: limit },
     ])
     .toArray();
 
@@ -265,7 +264,7 @@ const getUserFeedbacks = async (root, args, context, info) => {
 
   let limit = args.limit || 10;
   let offset = args.page || 1;
-  offset = (offset-1) * limit;
+  offset = (offset - 1) * limit;
 
   let customerFeedbacksUploads = await dbClient
     .db(dbName)
@@ -323,7 +322,7 @@ const getUserFeedbacks = async (root, args, context, info) => {
       { $match: { 'uploads.member._id': new ObjectId(args.id) } },
       { $match: { 'feedbackAnswers.0': { $exists: false } } },
       { $skip: offset },
-      { $limit: limit }
+      { $limit: limit },
     ])
     .toArray();
 

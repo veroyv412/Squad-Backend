@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const uri = process.env.MONGO_BD_URL;
-const dbClient = new MongoClient(uri, { useNewUrlParser: true,  useUnifiedTopology: true });
+const dbClient = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 const dbName = process.env.DB_NAME;
 
 console.log('process.env.MONGO_BD_URL', process.env.MONGO_BD_URL);
