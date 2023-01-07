@@ -8,12 +8,12 @@ const typeDefs = gql`
     users: [User]
     getSpotlightMembers(brandId: ID): [UploadPhoto]
     getUserByFirebaseId(firebaseId: ID!): User
-    getLookbookByUserId(userId: ID!, limit: Int, page: Int): [Lookbook]
+    getLookbookByUserId(userId: ID!, limit: Int, page: Int): [Lookbook!]!
     getLookbook(id: ID!): Lookbook
     getFollowers(id: ID): [Follower]
     getFollowings(id: ID): [Follower]
     isFollowing(userId1: ID, userId2: ID): Boolean
-    getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback]
+    getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
     getUserCompletedAnswers(id: ID): [FeedbackAnswer]
     getUserAnswer(id: ID): FeedbackAnswer
     getUserTotalLooks(id: ID): Int
@@ -51,14 +51,14 @@ const typeDefs = gql`
   }
 
   type Lookbook {
-    _id: ID
-    userId: ID
-    brandIds: [String]
-    categoryIds: [String]
-    productIds: [String]
-    uploadIds: [String]
-    photoURL: String
-    brands: [String]
+    _id: ID!
+    userId: ID!
+    brandIds: [String]!
+    categoryIds: [String]!
+    productIds: [String]!
+    uploadIds: [String]!
+    photoURL: String!
+    brands: [String]!
     categories: [String]
     products: [String]
     uploads: [UploadPhoto]

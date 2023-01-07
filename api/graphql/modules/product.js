@@ -10,20 +10,22 @@ const typeDefs = gql`
 
   type Product {
     _id: ID
-    brand: Brand
-    category: Category
+    brand: Brand!
+    category: Category!
+    name: String!
     productName: String
     productUrl: String
     productTags: [String]
     customer: Customer
-    verified: Boolean
+    verified: Boolean!
     tags: [String]
   }
 
   input ProductInput {
     _id: ID
-    brand: BrandInput
-    category: CategoryInput
+    brand: BrandInput!
+    category: CategoryInput!
+    name: String!
     productName: String
     productUrl: String
     customerId: String

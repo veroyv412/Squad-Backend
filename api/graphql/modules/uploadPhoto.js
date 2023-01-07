@@ -4,7 +4,7 @@ const uploadPhotoResolvers = require('../resolvers/uploadPhoto');
 
 const typeDefs = gql`
   extend type Query {
-    getUploadedPhotos(productIds: [String], limit: Int, page: Int): [UploadPhoto]
+    getUploadedPhotos(productIds: [String], limit: Int, page: Int): [UploadPhoto!]!
     getUpload(id: String): UploadPhoto
     getUserUploads(userId: String): [UploadPhoto]
     getBrandUploads(brandId: String, userId: String): BrandUpload
@@ -40,27 +40,29 @@ const typeDefs = gql`
   }
 
   type UploadPhoto {
-    _id: ID
-    memberId: ID
-    brand: Brand
-    category: Category
-    brandId: ID
-    categoryId: ID
-    productId: ID
-    product: Product
-    productName: String
-    productUrl: String
+    _id: ID!
+    memberId: ID!
+    brand: Brand!
+    category: Category!
+    brandId: ID!
+    description: String
+    categoryId: ID!
+    productId: ID!
+    product: Product!
+    productName: String!
+    productUrl: String!
     likes: Int
     flagged: Boolean
     member: User
     userLikes: [ID]
-    brandName: String
-    categoryName: String
+    brandName: String!
+    categoryName: String!
     tags: [String]
     earnedAmount: Float
     earning: MemberEarnings
     homepage: Boolean
     hidden: Boolean
+    createdAt: String!
   }
 
   input UploadPhotoInput {

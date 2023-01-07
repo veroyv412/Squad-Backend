@@ -6,7 +6,7 @@ const typeDefs = gql`
   extend type Query {
     getCustomer(id: String): Customer
     getCustomerGroups(customerId: String): [CustomerGroup]
-    getCustomerFeedbacks(customerId: String): [CustomerFeedback]
+    getCustomerFeedbacks(customerId: String): [CustomerFeedback!]!
     getCustomerBrandsAndCategories(customerId: String): BrandAndCategory
     getCustomerBrandsCategoriesProducts(
       customerId: String
@@ -45,19 +45,19 @@ const typeDefs = gql`
   }
 
   type CustomerFeedback {
-    _id: ID
-    customerId: ID
+    _id: ID!
+    customerId: ID!
     brand: Brand
     category: Category
     upload: UploadPhoto
     questions: [CustomerQuestion]
     uploads: [UploadPhoto]
-    productUrl: String
-    memberUploadId: ID
-    offerType: String
-    amount: Float
-    createdAt: Date
-    updatedAt: Date
+    productUrl: String!
+    memberUploadId: ID!
+    offerType: String!
+    amount: Float!
+    createdAt: Date!
+    updatedAt: Date!
   }
 
   type CustomerFeedbackAnswers {

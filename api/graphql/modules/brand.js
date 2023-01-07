@@ -13,8 +13,8 @@ const typeDefs = gql`
   }
 
   type Brand {
-    _id: ID
-    name: String
+    _id: ID!
+    name: String!
     verified: Boolean
     banner: String
     logo: String

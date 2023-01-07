@@ -14,8 +14,8 @@ const typeDefs = gql`
   }
 
   type Category {
-    _id: ID
-    name: String
+    _id: ID!
+    name: String!
     verified: Boolean
   }
 `;

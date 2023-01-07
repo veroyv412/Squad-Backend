@@ -243,7 +243,7 @@ const getLookbookByUserId = async (root, { userId, limit, page }, context, info)
       },
       { $match: { userId: new ObjectId(userId) } },
       { $skip: offset },
-      { $limit: limit },
+      { $limit: _limit },
     ])
     .toArray();
 

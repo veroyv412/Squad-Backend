@@ -45,6 +45,14 @@ const getUploadedPhotos = async (root, args, context, info) => {
           as: 'category',
         },
       },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'productId',
+          foreignField: '_id',
+          as: 'product',
+        },
+      },
       { $skip: offset },
       { $limit: limit },
     ])
@@ -54,6 +62,7 @@ const getUploadedPhotos = async (root, args, context, info) => {
     upload.brand = upload.brand[0];
     upload.member = upload.member[0];
     upload.category = upload.category[0];
+    upload.product = upload.product[0];
   }
 
   return uploads;
@@ -603,77 +612,72 @@ const uploadsFilter = async (root, args, context, info) => {
 
 const addUploadedPhoto = async (parent, args) => {
   try {
-    console.log('addUploadedPhoto');
-    console.log(args);
-    let photo = {
+    const photo = {
       brandId: null,
       categoryId: null,
       productId: null,
       memberId: new ObjectId(args.uploadPhoto.userId),
-      productName: args.uploadPhoto.productName,
-      brandName: args.uploadPhoto.brand.name,
-      categoryName: args.uploadPhoto.category.name,
       productUrl: args.uploadPhoto.productUrl,
       approved: false,
       createdAt: new Date(),
-      updatedAt: new Date(),
     };
 
-    let brand = null;
-    if (args.uploadPhoto.brand._id) {
-      brand = args.uploadPhoto.brand;
-      photo.brandId = new ObjectId(args.uploadPhoto.brand._id);
+    let brand = await dbClient
+      .db(dbName)
+      .collection('brands')
+      .findOne({
+        $or: [{ _id: args.uploadPhoto.brand?._id }, { name: args.uploadPhoto.brand?.name }],
+      });
+    let category = await dbClient
+      .db(dbName)
+      .collection('categories')
+      .findOne({
+        $or: [{ _id: args.uploadPhoto.category?._id }, { name: args.uploadPhoto.category?.name }],
+      });
+    let product = await dbClient
+      .db(dbName)
+      .collection('products')
+      .findOne({
+        $or: [{ _id: args.uploadPhoto.product?._id }, { name: args.uploadPhoto.product?.name }],
+      });
+
+    if (brand) {
+      photo.brandId = brand._id;
     } else {
       brand = await dbClient.db(dbName).collection('brands').insertOne({
         name: args.uploadPhoto.brand.name,
         verified: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
       photo.brandId = new ObjectId(brand.insertedId);
     }
 
-    let category = null;
-    if (args.uploadPhoto.category._id) {
-      category = args.uploadPhoto.category;
-      photo.categoryId = new ObjectId(args.uploadPhoto.category._id);
+    if (category) {
+      photo.categoryId = category._id;
     } else {
       category = await dbClient.db(dbName).collection('categories').insertOne({
         name: args.uploadPhoto.category.name,
         verified: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
       photo.categoryId = new ObjectId(category.insertedId);
     }
 
-    let product = null;
-    if (args.uploadPhoto.product._id) {
-      product = args.uploadPhoto.product;
-      photo.productId = new ObjectId(args.uploadPhoto.product._id);
-      photo.productName = args.uploadPhoto.product.productName;
+    if (product) {
+      photo.productId = product._id;
     } else {
       product = await dbClient
         .db(dbName)
         .collection('products')
         .insertOne({
+          name: args.uploadPhoto.product?.name,
           brandId: new ObjectId(photo.brandId),
           categoryId: new ObjectId(photo.categoryId),
-          productName: args.uploadPhoto.product.productName,
-          productUrl: photo.productUrl,
-          brandName: photo.brandName,
-          categoryName: photo.categoryName,
           verified: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
         });
       photo.productId = new ObjectId(product.insertedId);
-      photo.productName = args.uploadPhoto.product.productName;
     }
 
     photo.approved =
       brand.verified === true && category.verified === true && product.verified === true;
-    console.log(photo);
 
     let upload = await dbClient.db(dbName).collection('uploads').insertOne(photo);
 
