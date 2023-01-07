@@ -5,6 +5,7 @@ const userResolvers = require('../resolvers/user');
 const typeDefs = gql`
   extend type Query {
     user(id: ID!): User
+    me: User
     users: [User]
     getSpotlightMembers(brandId: ID): [UploadPhoto]
     getUserByFirebaseId(firebaseId: ID!): User
@@ -23,9 +24,10 @@ const typeDefs = gql`
   scalar Date
 
   type User {
-    _id: ID
-    displayName: String
-    email: String
+    _id: ID!
+    displayName: String!
+    username: String
+    email: String!
     hasUploads: Boolean
     pictureUrl: String
     dob: Date

@@ -23,6 +23,19 @@ const user = async (root, { id }, context, info) => {
   return user;
 };
 
+const me = async (root, args, context, info) => {
+  if (!context.req.cookies.access_token) {
+    throw new Error('Unauthorized');
+  }
+
+  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+
+  const usersRef = dbClient.db(dbName).collection('users');
+  const user = await usersRef.findOne({ stitchId: reqUserId });
+
+  return user;
+};
+
 const getUserByFirebaseId = async (root, { firebaseId }, context, info) => {
   const usersRef = dbClient.db(dbName).collection('users');
   const user = await usersRef.findOne({ firebaseId: new ObjectId(firebaseId) });
@@ -755,6 +768,7 @@ module.exports = {
   queries: {
     users,
     user,
+    me,
     getSpotlightMembers,
     getUserFeedbacks,
     getUserCompletedAnswers,
