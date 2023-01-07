@@ -48,26 +48,17 @@ class RealmApiClient {
   }
 
   async getEmailPasswordAccessToken(email, password) {
-    const config = {
-      method: 'get',
-      url: `https://realm.mongodb.com/api/client/v2.0/app/${process.env.REALM_APP_NAME}/auth/providers/local-userpass/login`,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      data: { username: email, password: password },
-    };
+    const credentials = Realm.Credentials.emailPassword(email, password);
+    const user = await app.logIn(credentials)
 
     try {
-      const response = await axios(config);
-
-      if (response.status === 200) {
-        this.accessToken = response.data.access_token;
-        this.refreshToken = response.data.refresh_token;
+      if (user) {
+        this.accessToken = user.accessToken;
+        this.refreshToken = user.refreshToken;
         return {
           access_token: this.accessToken,
           refresh_token: this.refreshToken,
-          user_id: response.data.user_id,
+          user_id: user.id,
         };
       }
     } catch (e) {

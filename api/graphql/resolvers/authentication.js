@@ -11,6 +11,16 @@ const getTokenByEmailAndPassword = async (_, args, context) => {
       args.email,
       args.password
     );
+
+    const reqDbUser = await dbClient
+        .db(dbName)
+        .collection('users')
+        .findOne({ stitchId: user_id });
+
+    if ( reqDbUser && reqDbUser?.status === 'pending' ){
+      throw new Error('User not confirmed')
+    }
+
     const accessTokenExpiry = new Date(jwt.decode(access_token).exp * 1000);
     const refreshTokenExpiry = new Date(jwt.decode(refresh_token).exp * 1000);
 
@@ -68,6 +78,7 @@ const registerUser = async (_, args, context) => {
       displayName: displayName,
       role: isAdmin ? 'customer' : 'member',
       email: email,
+      status: 'pending',
       username: username,
       createdAt: currentDate,
       updatedAt: currentDate,
