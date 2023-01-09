@@ -40,6 +40,8 @@ const me = async (root, args, context, info) => {
     throw new Error('Unauthorized');
   }
 
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
+
   const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
 
   const usersRef = dbClient.db(dbName).collection('users');
