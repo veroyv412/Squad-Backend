@@ -18,7 +18,19 @@ const users = async (root, args, context, info) => {
 
 const user = async (root, { id }, context, info) => {
   const usersRef = dbClient.db(dbName).collection('users');
+
   const user = await usersRef.findOne({ _id: new ObjectId(id) });
+
+  return user;
+};
+
+const userBy = async (root, { data }, context, info) => {
+  const usersRef = dbClient.db(dbName).collection('users');
+  let or = {
+    $or: [{ username: data }, { email: data }],
+  };
+
+  const user = await usersRef.findOne(or);
 
   return user;
 };
@@ -293,6 +305,14 @@ const getUserFeedbacks = async (root, args, context, info) => {
       },
       {
         $lookup: {
+          from: 'customers',
+          localField: 'customerId',
+          foreignField: '_id',
+          as: 'customer',
+        },
+      },
+      {
+        $lookup: {
           from: 'feedback_answers',
           localField: '_id',
           foreignField: 'customerFeedbackId',
@@ -330,6 +350,7 @@ const getUserFeedbacks = async (root, args, context, info) => {
           offerType: 'upload',
           productUrl: { $arrayElemAt: ['$uploads.productUrl', 0] },
           memberUploadId: { $arrayElemAt: ['$uploads._id', 0] },
+          customer: { $arrayElemAt: ['$customer', 0] },
         },
       },
       { $match: { 'uploads.member._id': new ObjectId(args.id) } },
@@ -768,6 +789,7 @@ module.exports = {
   queries: {
     users,
     user,
+    userBy,
     me,
     getSpotlightMembers,
     getUserFeedbacks,

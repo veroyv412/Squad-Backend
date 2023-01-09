@@ -49,7 +49,7 @@ class RealmApiClient {
 
   async getEmailPasswordAccessToken(email, password) {
     const credentials = Realm.Credentials.emailPassword(email, password);
-    const user = await app.logIn(credentials)
+    const user = await app.logIn(credentials);
 
     try {
       if (user) {
@@ -87,6 +87,27 @@ class RealmApiClient {
     const response = await axios(config);
 
     if (response.status === 200) {
+      this.accessToken = response.data.access_token;
+      return this.accessToken;
+    }
+
+    return null;
+  }
+
+  async getAccessTokenByRefreshToken(refreshToken) {
+    const config = {
+      method: 'POST',
+      url: 'https://realm.mongodb.com/api/client/v2.0/auth/session',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${refreshToken}`,
+      },
+    };
+
+    const response = await axios(config);
+
+    if (response.status === 201) {
       this.accessToken = response.data.access_token;
       return this.accessToken;
     }
