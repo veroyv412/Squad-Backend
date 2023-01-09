@@ -46,6 +46,15 @@ const getTokenByEmailAndPassword = async (_, args, context) => {
   }
 };
 
+const getAccessTokenByRefreshToken = async (_, args, context) => {
+  try {
+    const access_token = await realmApi.getAccessTokenByRefreshToken(args.refresh_token);
+    return access_token ;
+  } catch (e) {
+    throw new AuthenticationError(e);
+  }
+};
+
 const assertAuthenticated = (context) => {
   try {
     return RealmApiClient.getUserFromGraphQL(context.token);
@@ -190,6 +199,7 @@ const assertIsLoggedInAsAdmin = async (context) => {
 module.exports = {
   queries: {
     getTokenByEmailAndPassword,
+    getAccessTokenByRefreshToken
   },
   mutations: {
     registerUser,

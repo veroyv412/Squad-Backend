@@ -18,7 +18,22 @@ const users = async (root, args, context, info) => {
 
 const user = async (root, { id }, context, info) => {
   const usersRef = dbClient.db(dbName).collection('users');
-  const user = await usersRef.findOne({ _id: new ObjectId(id) });
+
+  const user = await usersRef.findOne({ _id: new ObjectId(id) } );
+
+  return user;
+};
+
+const userBy = async (root, { data }, context, info) => {
+  const usersRef = dbClient.db(dbName).collection('users');
+  let or = {
+    $or: [
+      { username: data },
+      { email: data }
+    ]
+  }
+
+  const user = await usersRef.findOne(or);
 
   return user;
 };
@@ -764,6 +779,7 @@ module.exports = {
   queries: {
     users,
     user,
+    userBy,
     getSpotlightMembers,
     getUserFeedbacks,
     getUserCompletedAnswers,
