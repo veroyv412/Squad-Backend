@@ -125,6 +125,8 @@ const assertIsLoggedIn = async (context) => {
       throw new Error('Unauthorized');
     }
 
+    await realmApi.isAccessTokenValid(context.req.cookies.access_token);
+
     const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
     const reqDbUser = await dbClient
       .db(dbName)
@@ -144,6 +146,8 @@ const assertIsLoggedInAsAdminOrProfileId = async (context, id) => {
     if (!context.req.cookies.access_token) {
       throw new Error('Unauthorized');
     }
+
+    await realmApi.isAccessTokenValid(context.req.cookies.access_token);
 
     const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
     const reqDbUser = await dbClient
@@ -172,6 +176,8 @@ const assertIsLoggedInAsAdmin = async (context) => {
     if (!context.req.cookies.access_token) {
       throw new Error('Unauthorized');
     }
+
+    await realmApi.isAccessTokenValid(context.req.cookies.access_token);
 
     const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
 

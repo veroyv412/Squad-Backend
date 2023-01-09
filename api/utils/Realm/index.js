@@ -73,6 +73,32 @@ class RealmApiClient {
     return user;
   }
 
+  async isAccessTokenValid(accessToken) {
+    const adminAccessToken = await this.getAccessToken();
+
+    const config = {
+      method: 'post',
+      url: `https://realm.mongodb.com/api/admin/v3.0/groups/${process.env.REALM_GROUP_ID}/apps/${process.env.REALM_APP_ID}/users/verify_token`,
+      headers: {
+        'Authorization': `Bearer ${adminAccessToken}`,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        token: accessToken
+      },
+    };
+
+    try {
+      const response = await axios(config);
+
+      if (response.status === 200) {
+        return true;
+      }
+    } catch (e) {
+      throw new Error('Unauthorized');
+    }
+  }
+
   async getAccessToken() {
     const config = {
       method: 'get',
