@@ -47,6 +47,7 @@ const typeDefs = gql`
   type CustomerFeedback {
     _id: ID!
     customerId: ID!
+    customer: Customer
     brand: Brand
     category: Category
     upload: UploadPhoto

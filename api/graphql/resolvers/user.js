@@ -280,6 +280,14 @@ const getUserFeedbacks = async (root, args, context, info) => {
       },
       {
         $lookup: {
+          from: 'customers',
+          localField: 'customerId',
+          foreignField: '_id',
+          as: 'customer',
+        },
+      },
+      {
+        $lookup: {
           from: 'feedback_answers',
           localField: '_id',
           foreignField: 'customerFeedbackId',
@@ -317,6 +325,7 @@ const getUserFeedbacks = async (root, args, context, info) => {
           offerType: 'upload',
           productUrl: { $arrayElemAt: ['$uploads.productUrl', 0] },
           memberUploadId: { $arrayElemAt: ['$uploads._id', 0] },
+          customer: { $arrayElemAt: ['$customer', 0] },
         },
       },
       { $match: { 'uploads.member._id': new ObjectId(args.id) } },
