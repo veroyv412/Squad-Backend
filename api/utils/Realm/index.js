@@ -49,7 +49,7 @@ class RealmApiClient {
 
   async getEmailPasswordAccessToken(email, password) {
     const credentials = Realm.Credentials.emailPassword(email, password);
-    const user = await app.logIn(credentials)
+    const user = await app.logIn(credentials);
 
     try {
       if (user) {

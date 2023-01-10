@@ -12,13 +12,10 @@ const getTokenByEmailAndPassword = async (_, args, context) => {
       args.password
     );
 
-    const reqDbUser = await dbClient
-        .db(dbName)
-        .collection('users')
-        .findOne({ stitchId: user_id });
+    const reqDbUser = await dbClient.db(dbName).collection('users').findOne({ stitchId: user_id });
 
-    if ( reqDbUser && reqDbUser?.status === 'pending' ){
-      throw new Error('User not confirmed')
+    if (reqDbUser && reqDbUser?.status === 'pending') {
+      throw new Error('User not confirmed');
     }
 
     const accessTokenExpiry = new Date(jwt.decode(access_token).exp * 1000);
@@ -49,7 +46,7 @@ const getTokenByEmailAndPassword = async (_, args, context) => {
 const getAccessTokenByRefreshToken = async (_, args, context) => {
   try {
     const access_token = await realmApi.getAccessTokenByRefreshToken(args.refresh_token);
-    return access_token ;
+    return access_token;
   } catch (e) {
     throw new AuthenticationError(e);
   }
@@ -205,7 +202,7 @@ const assertIsLoggedInAsAdmin = async (context) => {
 module.exports = {
   queries: {
     getTokenByEmailAndPassword,
-    getAccessTokenByRefreshToken
+    getAccessTokenByRefreshToken,
   },
   mutations: {
     registerUser,

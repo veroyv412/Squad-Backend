@@ -4,7 +4,7 @@ const categoryResolvers = require('../resolvers/category');
 
 const typeDefs = gql`
   extend type Query {
-    getCategories: [Category]
+    getCategories: [Category!]!
   }
 
   input CategoryInput {
@@ -16,7 +16,7 @@ const typeDefs = gql`
   type Category {
     _id: ID!
     name: String!
-    verified: Boolean
+    verified: Boolean!
   }
 `;
 

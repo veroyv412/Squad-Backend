@@ -19,7 +19,7 @@ const users = async (root, args, context, info) => {
 const user = async (root, { id }, context, info) => {
   const usersRef = dbClient.db(dbName).collection('users');
 
-  const user = await usersRef.findOne({ _id: new ObjectId(id) } );
+  const user = await usersRef.findOne({ _id: new ObjectId(id) });
 
   return user;
 };
@@ -27,13 +27,25 @@ const user = async (root, { id }, context, info) => {
 const userBy = async (root, { data }, context, info) => {
   const usersRef = dbClient.db(dbName).collection('users');
   let or = {
-    $or: [
-      { username: data },
-      { email: data }
-    ]
-  }
+    $or: [{ username: data }, { email: data }],
+  };
 
   const user = await usersRef.findOne(or);
+
+  return user;
+};
+
+const me = async (root, args, context, info) => {
+  if (!context.req.cookies.access_token) {
+    throw new Error('Unauthorized');
+  }
+
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
+
+  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+
+  const usersRef = dbClient.db(dbName).collection('users');
+  const user = await usersRef.findOne({ stitchId: reqUserId });
 
   return user;
 };
@@ -780,6 +792,7 @@ module.exports = {
     users,
     user,
     userBy,
+    me,
     getSpotlightMembers,
     getUserFeedbacks,
     getUserCompletedAnswers,
