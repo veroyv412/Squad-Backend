@@ -241,7 +241,11 @@ const getUserUploads = async (root, args, context, info) => {
     return [];
   }
 
-  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.userId);
+
+  let limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset - 1) * limit;
 
   const uploads = await dbClient
     .db(dbName)
@@ -298,6 +302,8 @@ const getUserUploads = async (root, args, context, info) => {
       },
       { $match: { memberId: new ObjectId(args.userId) } },
       { $sort: { createdAt: -1 } },
+      { $skip: offset },
+      { $limit: limit },
     ])
     .toArray();
 

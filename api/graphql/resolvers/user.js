@@ -354,6 +354,12 @@ const getUserFeedbacks = async (root, args, context, info) => {
 };
 
 const getUserCompletedAnswers = async (root, args, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+
+  let limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset - 1) * limit;
+
   let answers = await dbClient
     .db(dbName)
     .collection('feedback_answers')
@@ -408,6 +414,8 @@ const getUserCompletedAnswers = async (root, args, context, info) => {
       },
       { $match: { userId: new ObjectId(args.id) } },
       { $sort: { createdAt: -1 } },
+      { $skip: offset },
+      { $limit: limit },
     ])
     .toArray();
 
