@@ -408,7 +408,13 @@ const getBrandUploads = async (root, args, context, info) => {
 };
 
 const uploadsSearch = async (root, args, context, info) => {
-  let { searchParam, brandIds, uploadIds, categoryIds, productIds } = args;
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
+
+  let { searchParam, brandIds, uploadIds, categoryIds, productIds, limit, page } = args;
+
+  limit = limit || 10;
+  let offset = page || 1;
+  offset = (offset - 1) * limit;
 
   let $match = {
     $match: {
@@ -490,6 +496,8 @@ const uploadsSearch = async (root, args, context, info) => {
           as: 'category',
         },
       },
+      { $skip: offset },
+      { $limit: limit },
     ])
     .toArray();
 

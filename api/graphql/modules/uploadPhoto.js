@@ -14,6 +14,8 @@ const typeDefs = gql`
       uploadIds: String
       categoryIds: String
       productIds: String
+      limit: Int
+      page: Int
     ): [SearchUploadPhoto]
     uploadsFilter(filter: FilterInput): [SearchUploadPhoto]
     getPendingUploads: [UploadPhoto]
