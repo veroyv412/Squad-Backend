@@ -69,6 +69,8 @@ const getUploadedPhotos = async (root, args, context, info) => {
 };
 
 const getUpload = async (root, { id }, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
+
   const uploads = await dbClient
     .db(dbName)
     .collection('uploads')
