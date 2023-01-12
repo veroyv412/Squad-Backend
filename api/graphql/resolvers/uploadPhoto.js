@@ -610,7 +610,12 @@ const uploadsFilter = async (root, args, context, info) => {
 
 /* MUTATIONS */
 
-const addUploadedPhoto = async (parent, args) => {
+const addUploadedPhoto = async (parent, args, context) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(
+    context,
+    args.uploadPhoto.userId
+  );
+
   try {
     const photo = {
       brandId: null,
