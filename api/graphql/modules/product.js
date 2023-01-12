@@ -23,9 +23,9 @@ const typeDefs = gql`
 
   input ProductInput {
     _id: ID
-    brand: BrandInput!
-    category: CategoryInput!
-    name: String!
+    brand: BrandInput
+    category: CategoryInput
+    name: String
     productName: String
     productUrl: String
     customerId: String
