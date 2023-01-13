@@ -10,7 +10,7 @@ const typeDefs = gql`
     getMemberTotalEarnings(memberId: String): TotalEarning
     getMembersCompensationAdminLedger(month: Int, year: Int): [MemberEarningList]
     getCompensationAdminLedgerHistory(memberId: ID): [MemberEarnings]
-    getDisburedEarnings(memberId: ID): [MemberEarnings]
+    getDisburedEarnings(memberId: ID, limit: Int, page: Int): [MemberEarnings]
   }
 
   type TotalEarning {

@@ -7,6 +7,7 @@ const _ = require('lodash');
 const uploadResolvers = require('../resolvers/uploadPhoto');
 const notificationResolvers = require('../resolvers/notification');
 const PaymentProviderFactory = require('../../utils/Payments/Providers/PaymentProviderFactory');
+const authenticationResolvers = require('../resolvers/authentication');
 
 const activeCompensation = async (root, args, context, info) => {
   let oDate = new Date();
@@ -64,6 +65,8 @@ const getMemberCompensations = async (root, args, context, info) => {
 };
 
 const getMemberTotalEarnings = async (root, args, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.memberId);
+
   let memberEarnings = {};
 
   const uploadEarnings = await dbClient
@@ -205,6 +208,12 @@ const getMembersCompensationAdminLedger = async (root, args, context, info) => {
 
 const getDisburedEarnings = async (root, args, context, info) => {
   try {
+    await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.memberId);
+
+    let limit = args.limit || 10;
+    let offset = args.page || 1;
+    offset = (offset - 1) * limit;
+
     const memberId = new ObjectId(args.memberId);
 
     const earnings = await dbClient
@@ -225,6 +234,8 @@ const getDisburedEarnings = async (root, args, context, info) => {
           },
         },
         { $match: { memberId: memberId, payed: true } },
+        { $skip: offset },
+        { $limit: limit },
       ])
       .toArray();
 

@@ -16,7 +16,7 @@ const typeDefs = gql`
     getFollowings(id: ID): [Follower]
     isFollowing(userId1: ID, userId2: ID): Boolean
     getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
-    getUserCompletedAnswers(id: ID): [FeedbackAnswer]
+    getUserCompletedAnswers(id: ID, limit: Int, page: Int): [FeedbackAnswer]
     getUserAnswer(id: ID): FeedbackAnswer
     getUserTotalLooks(id: ID): Int
     getUserLastUpdatedDate(id: ID): String

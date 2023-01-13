@@ -6,7 +6,7 @@ const typeDefs = gql`
   extend type Query {
     getUploadedPhotos(productIds: [String], limit: Int, page: Int): [UploadPhoto!]!
     getUpload(id: String): UploadPhoto!
-    getUserUploads(userId: String): [UploadPhoto]
+    getUserUploads(userId: String, limit: Int, page: Int): [UploadPhoto]
     getBrandUploads(brandId: String, userId: String): BrandUpload
     uploadsSearch(
       searchParam: String
@@ -14,6 +14,8 @@ const typeDefs = gql`
       uploadIds: String
       categoryIds: String
       productIds: String
+      limit: Int
+      page: Int
     ): [SearchUploadPhoto]
     uploadsFilter(filter: FilterInput): [SearchUploadPhoto]
     getPendingUploads: [UploadPhoto]
