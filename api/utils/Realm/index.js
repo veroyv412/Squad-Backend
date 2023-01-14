@@ -84,7 +84,7 @@ class RealmApiClient {
         'Content-Type': 'application/json',
       },
       data: {
-        token: accessToken
+        token: accessToken,
       },
     };
 
@@ -95,7 +95,7 @@ class RealmApiClient {
         return true;
       }
     } catch (e) {
-      throw new Error('Unauthorized');
+      throw new AuthenticationError();
     }
   }
 
