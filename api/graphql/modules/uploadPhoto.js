@@ -79,6 +79,7 @@ const typeDefs = gql`
     userId: ID
     flagged: Boolean
     approved: Boolean
+    uuid: String
   }
 
   type SearchUser {
