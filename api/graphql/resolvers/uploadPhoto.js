@@ -711,8 +711,8 @@ const addUploadedPhoto = async (parent, args, context) => {
         .db(dbName)
         .collection('feedback_offers')
         .insertOne({
-          memberId: new ObjectId(earning.member._id),
-          lookId: upload.insertedId.toString(),
+          memberId: new ObjectId(args.uploadPhoto.userId),
+          lookId: new ObjectId(upload.insertedId.toString()),
           active: true,
           earnings: 0.75,
           createdAt: new Date(),
@@ -726,9 +726,9 @@ const addUploadedPhoto = async (parent, args, context) => {
       }
     }
 
-    await notificationResolvers.helper.createPendingUploadNotificationToMember(
-      upload.insertedId.toString()
-    );
+    // await notificationResolvers.helper.createPendingUploadNotificationToMember(
+    //   upload.insertedId.toString()
+    // );
 
     return upload.insertedId.toString();
 
