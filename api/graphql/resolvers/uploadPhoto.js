@@ -707,6 +707,17 @@ const addUploadedPhoto = async (parent, args, context) => {
         upload.insertedId.toString(),
         new Date()
       );
+      await dbClient
+        .db(dbName)
+        .collection('feedback_offers')
+        .insertOne({
+          memberId: new ObjectId(earning.member._id),
+          lookId: upload.insertedId.toString(),
+          active: true,
+          earnings: 0.75,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
       if (product.verified) {
         await compensationResolvers.helper.compensateApprovedProduct(
           upload.insertedId.toString(),
