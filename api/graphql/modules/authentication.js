@@ -5,7 +5,7 @@ const authenticationResolvers = require('../resolvers/authentication');
 const typeDefs = gql`
   extend type Query {
     getTokenByEmailAndPassword(email: String, password: String): AccessTokenObject!
-    getAccessTokenByRefreshToken(refresh_token: String): String!
+    getAccessTokenByRefreshToken(refresh_token: String): RefreshTokenObject
   }
 
   type AccessTokenObject {
@@ -13,6 +13,11 @@ const typeDefs = gql`
     refresh_token: String
     user_id: String
     error: String
+  }
+
+  type RefreshTokenObject {
+    access_token: String
+    success: Boolean
   }
 
   input RegisterUserInput {

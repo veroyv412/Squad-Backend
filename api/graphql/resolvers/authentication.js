@@ -4,6 +4,49 @@ const realmApi = new RealmApiClient();
 const { dbClient, dbName } = require('../../config/mongo');
 const sgMail = require('@sendgrid/mail');
 const jwt = require('jsonwebtoken');
+const express = require('express');
+
+/**
+ * @param {express.Response<any, Record<string, any>>} res
+ * @param {string} accessToken
+ * @param {Record<string, any>} cookieOptions
+ */
+const setAccessTokenCookie = (res, accessToken, cookieOptions) => {
+  const _cookieOptions = {
+    httpOnly: true,
+    sameSite: 'lax',
+    domain: process.env.NODE_ENV === 'development' ? 'localhost' : process.env.COOKIE_DOMAIN,
+    secure: process.env.NODE_ENV === 'development' ? false : true,
+    ...cookieOptions,
+  };
+
+  if (!accessToken) {
+    res.clearCookie('access_token', _cookieOptions);
+  } else {
+    res.cookie('access_token', accessToken, _cookieOptions);
+  }
+};
+
+/**
+ * @param {express.Response<any, Record<string, any>>} res
+ * @param {string} refreshToken
+ * @param {Record<string, any>} cookieOptions
+ */
+const setRefreshTokenCookie = (res, refreshToken, cookieOptions) => {
+  const _cookieOptions = {
+    httpOnly: true,
+    sameSite: 'lax',
+    domain: process.env.NODE_ENV === 'development' ? 'localhost' : process.env.COOKIE_DOMAIN,
+    secure: process.env.NODE_ENV === 'development' ? false : true,
+    ...cookieOptions,
+  };
+
+  if (!refreshToken) {
+    res.clearCookie('refresh_token', _cookieOptions);
+  } else {
+    res.cookie('refresh_token', refreshToken, _cookieOptions);
+  }
+};
 
 const getTokenByEmailAndPassword = async (_, args, context) => {
   try {
@@ -19,23 +62,14 @@ const getTokenByEmailAndPassword = async (_, args, context) => {
     }
 
     const accessTokenExpiry = new Date(jwt.decode(access_token).exp * 1000);
-    const refreshTokenExpiry = new Date(jwt.decode(refresh_token).exp * 1000);
+    setAccessTokenCookie(context.res, access_token, {
+      expires: accessTokenExpiry,
+    });
 
-    context.res
-      .cookie('access_token', access_token, {
-        expires: accessTokenExpiry,
-        httpOnly: true,
-        sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'development' ? 'localhost' : process.env.COOKIE_DOMAIN,
-        secure: process.env.NODE_ENV === 'development' ? false : true,
-      })
-      .cookie('refresh_token', refresh_token, {
-        expires: refreshTokenExpiry,
-        httpOnly: true,
-        sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'development' ? 'localhost' : process.env.COOKIE_DOMAIN,
-        secure: process.env.NODE_ENV === 'development' ? false : true,
-      });
+    const refreshTokenExpiry = new Date(jwt.decode(refresh_token).exp * 1000);
+    setRefreshTokenCookie(context.res, refresh_token, {
+      expires: refreshTokenExpiry,
+    });
 
     return { access_token, refresh_token, user_id };
   } catch (e) {
@@ -44,12 +78,22 @@ const getTokenByEmailAndPassword = async (_, args, context) => {
 };
 
 const getAccessTokenByRefreshToken = async (_, args, context) => {
+  const refreshToken = context.req.cookies['refresh_token'] || args.refresh_token;
+
+  let accessToken;
   try {
-    const access_token = await realmApi.getAccessTokenByRefreshToken(args.refresh_token);
-    return access_token;
+    accessToken = await realmApi.getAccessTokenByRefreshToken(refreshToken);
   } catch (e) {
-    throw new AuthenticationError(e);
+    console.log(e);
+    return { success: false };
   }
+
+  const accessTokenExpiry = new Date(jwt.decode(accessToken).exp * 1000);
+  setAccessTokenCookie(context.res, accessToken, {
+    expires: accessTokenExpiry,
+  });
+
+  return { access_token: accessToken, success: true };
 };
 
 const assertAuthenticated = (context) => {
@@ -122,7 +166,7 @@ const registerUser = async (_, args, context) => {
 const assertIsLoggedIn = async (context) => {
   try {
     if (!context.req.cookies.access_token) {
-      throw new Error('Unauthorized');
+      throw new AuthenticationError();
     }
 
     await realmApi.isAccessTokenValid(context.req.cookies.access_token);
@@ -144,7 +188,7 @@ const assertIsLoggedIn = async (context) => {
 const assertIsLoggedInAsAdminOrProfileId = async (context, id) => {
   try {
     if (!context.req.cookies.access_token) {
-      throw new Error('Unauthorized');
+      throw new AuthenticationError();
     }
 
     await realmApi.isAccessTokenValid(context.req.cookies.access_token);
@@ -174,7 +218,7 @@ const assertIsLoggedInAsAdminOrProfileId = async (context, id) => {
 const assertIsLoggedInAsAdmin = async (context) => {
   try {
     if (!context.req.cookies.access_token) {
-      throw new Error('Unauthorized');
+      throw new AuthenticationError();
     }
 
     await realmApi.isAccessTokenValid(context.req.cookies.access_token);

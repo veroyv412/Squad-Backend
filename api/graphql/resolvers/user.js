@@ -6,6 +6,7 @@ const moment = require('moment'); // require
 
 const notificationResolvers = require('../resolvers/notification');
 const authenticationResolvers = require('../resolvers/authentication');
+const { AuthenticationError } = require('apollo-server-express');
 
 const users = async (root, args, context, info) => {
   await authenticationResolvers.helper.assertIsLoggedIn(context);
@@ -37,7 +38,7 @@ const userBy = async (root, { data }, context, info) => {
 
 const me = async (root, args, context, info) => {
   if (!context.req.cookies.access_token) {
-    throw new Error('Unauthorized');
+    throw new AuthenticationError();
   }
 
   await authenticationResolvers.helper.assertIsLoggedIn(context);
