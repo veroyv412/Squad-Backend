@@ -7,6 +7,9 @@ const authenticationResolvers = require('../resolvers/authentication');
 
 const _ = require('lodash');
 const { union } = require('lodash');
+const axios = require('axios');
+const dotenv = require('dotenv');
+dotenv.config();
 
 const productHelper = require('./product');
 
@@ -626,6 +629,31 @@ const uploadsFilter = async (root, args, context, info) => {
 
 /* MUTATIONS */
 
+const storeUploadCarePhoto = async(uuid) => {
+  if ( !uuid ){
+    throw new Error('UUID is Required')
+  }
+
+  const config = {
+    method: 'put',
+    url: `https://api.uploadcare.com/files/${uuid}/storage/`,
+    headers: {
+      'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`,
+      'Accept': 'application/vnd.uploadcare-v0.7+json',
+    }
+  };
+
+  try {
+    const response = await axios(config);
+
+    if (response.status === 200) {
+      return true;
+    }
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
 const addUploadedPhoto = async (parent, args, context) => {
   await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(
     context,
@@ -640,6 +668,7 @@ const addUploadedPhoto = async (parent, args, context) => {
       memberId: new ObjectId(args.uploadPhoto.userId),
       productUrl: args.uploadPhoto.productUrl,
       approved: false,
+      uuid: args.uploadPhoto.uuid,
       createdAt: new Date(),
     };
 
@@ -730,22 +759,9 @@ const addUploadedPhoto = async (parent, args, context) => {
       upload.insertedId.toString()
     );
 
-    return upload.insertedId.toString();
+    await storeUploadCarePhoto(args.uploadPhoto.uuid)
 
-    //Brands - Note: Leave here as an example
-    /*let brands = await dbClient.db(dbName).collection('brands').aggregate(
-            [
-                {
-                    $project:
-                        {
-                            name: { $toLower: "$name" },
-                            verified: 1
-                        }
-                },
-                { $match : { name : args.uploadPhoto.brand.name.toLowerCase() } }
-            ]
-        ).toArray();
-        */
+    return upload.insertedId.toString();
   } catch (e) {
     return e;
   }
