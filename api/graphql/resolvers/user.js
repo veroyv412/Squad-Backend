@@ -287,6 +287,83 @@ const getLookbook = async (root, { id }, context, info) => {
   return lookbook;
 };
 
+getMyFeedbackOffers = async (root, args, context, _) => {
+  if (!context.req.cookies.access_token) {
+    throw new AuthenticationError();
+  }
+
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
+
+  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+
+  let limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset - 1) * limit;
+
+  const usersRef = dbClient.db(dbName).collection('users');
+  const user = await usersRef.findOne({ stitchId: reqUserId });
+
+  const questions = await dbClient.db(dbName).collection('feedback_questions').find({}).toArray();
+
+  const userOffers = await dbClient
+    .db(dbName)
+    .collection('feedback_offers')
+    .aggregate([
+      { $match: { $and: [{ memberId: new ObjectId(user._id) }, { active: true }] } },
+      {
+        $lookup: {
+          from: 'uploads',
+          let: { lookId: '$lookId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$lookId'] } } },
+            {
+              $lookup: {
+                from: 'brands',
+                let: { brandId: '$brandId' },
+                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$brandId'] } } }],
+                as: 'brand',
+              },
+            },
+            {
+              $lookup: {
+                from: 'categories',
+                let: { categoryId: '$categoryId' },
+                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$categoryId'] } } }],
+                as: 'category',
+              },
+            },
+            {
+              $lookup: {
+                from: 'products',
+                let: { productId: '$productId' },
+                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$productId'] } } }],
+                as: 'product',
+              },
+            },
+            {
+              $addFields: {
+                brand: { $arrayElemAt: ['$brand', 0] },
+                category: { $arrayElemAt: ['$category', 0] },
+                product: { $arrayElemAt: ['$product', 0] },
+              },
+            },
+          ],
+          as: 'look',
+        },
+      },
+      {
+        $addFields: {
+          look: { $arrayElemAt: ['$look', 0] },
+        },
+      },
+      { $skip: offset },
+      { $limit: limit },
+    ])
+    .toArray();
+
+  return userOffers.map((offer) => ({ ...offer, questions }));
+};
+
 const getUserFeedbacks = async (root, args, context, info) => {
   await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
 
@@ -802,6 +879,7 @@ module.exports = {
     user,
     userBy,
     me,
+    getMyFeedbackOffers,
     getSpotlightMembers,
     getUserFeedbacks,
     getUserCompletedAnswers,
