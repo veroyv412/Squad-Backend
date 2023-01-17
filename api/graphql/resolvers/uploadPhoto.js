@@ -726,9 +726,9 @@ const addUploadedPhoto = async (parent, args, context) => {
       }
     }
 
-    // await notificationResolvers.helper.createPendingUploadNotificationToMember(
-    //   upload.insertedId.toString()
-    // );
+    await notificationResolvers.helper.createPendingUploadNotificationToMember(
+      upload.insertedId.toString()
+    );
 
     return upload.insertedId.toString();
 
