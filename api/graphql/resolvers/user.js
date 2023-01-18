@@ -288,10 +288,6 @@ const getLookbook = async (root, { id }, context, info) => {
 };
 
 getMyFeedbackOffers = async (root, args, context, _) => {
-  if (!context.req.cookies.access_token) {
-    throw new AuthenticationError();
-  }
-
   await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
