@@ -3,6 +3,8 @@ const ObjectId = require('mongodb').ObjectId;
 const NotificationFactory = require('../../utils/Notification/notificationFactory');
 const sgMail = require('@sendgrid/mail');
 
+const authenticationResolvers = require('../resolvers/authentication');
+
 const moment = require('moment'); // require
 
 const NOTIFICATION_TYPES = {
@@ -22,6 +24,8 @@ const NOTIFICATION_FROM_TO_TYPES = {
 
 /* Queries */
 const getMemberNotifications = async (root, args, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.userId)
+
   const notifications = await dbClient
     .db(dbName)
     .collection('notifications')
