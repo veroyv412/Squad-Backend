@@ -149,7 +149,13 @@ const getUserLastUpdatedDate = async (root, { id }, context, info) => {
   return null;
 };
 
-const getFollowers = async (root, { id }, context, info) => {
+const getFollowers = async (root, args, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+
+  let limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset - 1) * limit;
+
   const followers = await dbClient
     .db(dbName)
     .collection('followers')
@@ -170,8 +176,10 @@ const getFollowers = async (root, { id }, context, info) => {
           as: 'user2',
         },
       },
-      { $match: { userId2: new ObjectId(id) } },
+      { $match: { userId2: new ObjectId(args.id) } },
       { $sort: { createdAt: -1 } },
+      { $skip: offset },
+      { $limit: limit }
     ])
     .toArray();
 
@@ -183,7 +191,13 @@ const getFollowers = async (root, { id }, context, info) => {
   return followers;
 };
 
-const getFollowings = async (root, { id }, context, info) => {
+const getFollowings = async (root, args, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+
+  let limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset - 1) * limit;
+
   const followers = await dbClient
     .db(dbName)
     .collection('followers')
@@ -204,8 +218,10 @@ const getFollowings = async (root, { id }, context, info) => {
           as: 'user2',
         },
       },
-      { $match: { userId1: new ObjectId(id) } },
+      { $match: { userId1: new ObjectId(args.id) } },
       { $sort: { createdAt: -1 } },
+      { $skip: offset },
+      { $limit: limit }
     ])
     .toArray();
 

@@ -51,7 +51,7 @@ const typeDefs = gql`
     categoryId: ID!
     productId: ID!
     product: Product!
-    productName: String!
+    productName: String
     productUrl: String!
     likes: Int
     flagged: Boolean

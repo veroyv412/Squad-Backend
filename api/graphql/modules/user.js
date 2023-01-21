@@ -12,8 +12,8 @@ const typeDefs = gql`
     getUserByFirebaseId(firebaseId: ID!): User
     getLookbookByUserId(userId: ID!, limit: Int, page: Int): [Lookbook!]!
     getLookbook(id: ID!): Lookbook
-    getFollowers(id: ID): [Follower]
-    getFollowings(id: ID): [Follower]
+    getFollowers(id: ID, limit: Int, page: Int): [Follower]
+    getFollowings(id: ID, limit: Int, page: Int): [Follower]
     isFollowing(userId1: ID, userId2: ID): Boolean
     getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
     getUserCompletedAnswers(id: ID, limit: Int, page: Int): [FeedbackAnswer]
