@@ -749,7 +749,7 @@ const addUploadedPhoto = async (parent, args, context) => {
           memberId: new ObjectId(args.uploadPhoto.userId),
           lookId: new ObjectId(upload.insertedId.toString()),
           active: true,
-          earnings: 0.75,
+          earnings: 0.5,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
