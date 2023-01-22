@@ -807,31 +807,51 @@ const unfollow = async (parent, args) => {
   }
 };
 
+const validateFeedbackAnswer = async (feedbackAnswer) => {
+  const offer = await dbClient
+    .db(dbName)
+    .collection('feedback_offers')
+    .findOne({ _id: new ObjectId(feedbackAnswer.feedbackId) });
+
+  if (!offer || !offer.active) throw new Error('Feedback offer is not active');
+
+  const dbQuestions = await dbClient.db(dbName).collection('feedback_questions').find({}).toArray();
+
+  const transformedDbQuestions = dbQuestions.reduce(
+    (acc, question) => ({
+      ...acc,
+      [question._id]: question.answers,
+    }),
+    {}
+  );
+
+  feedbackAnswer.answers.forEach((answer) => {
+    if (!Object.keys(transformedDbQuestions).includes(answer.questionId))
+      throw new Error('Questions are not valid');
+    if (!transformedDbQuestions[answer.questionId].includes(answer.answer)) {
+      throw new Error('Answers are not valid');
+    }
+  });
+};
+
 const answerFeedback = async (parent, args) => {
   try {
-    let answerFeedback = {
-      customerFeedbackId: new ObjectId(args.data.feedbackId),
-      userId: new ObjectId(args.data.userId),
-      answers: args.data.answers.map((a) => ({ ...a, questionId: new ObjectId(a.questionId) })),
-      amount: args.data.amount,
-      memberUploadId: new ObjectId(args.data.memberUploadId),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    await validateFeedbackAnswer(args.data);
 
-    const upload = await dbClient
-      .db(dbName)
-      .collection('uploads')
-      .findOne({ _id: new ObjectId(args.data.memberUploadId) });
-    let offerEarnedAmount = upload.offerEarnedAmount ? upload.offerEarnedAmount : 0;
-    offerEarnedAmount = offerEarnedAmount + args.data.amount;
     await dbClient
       .db(dbName)
-      .collection('uploads')
-      .updateOne(
-        { _id: new ObjectId(upload._id) },
-        { $set: { credited: true, offerEarnedAmount: offerEarnedAmount } }
-      );
+      .collection('feedback_offers')
+      .updateOne({ _id: new ObjectId(args.data.feedbackId) }, { $set: { active: false } });
+
+    let answerFeedback = {
+      feedbackId: new ObjectId(args.data.feedbackId),
+      userId: new ObjectId(args.data.userId),
+      answers: args.data.answers.map((answer) => ({
+        ...answer,
+        questionId: new ObjectId(answer.questionId),
+      })),
+      createdAt: new Date(),
+    };
 
     answerFeedback = await dbClient
       .db(dbName)
@@ -839,29 +859,39 @@ const answerFeedback = async (parent, args) => {
       .insertOne(answerFeedback);
 
     //Add Notification
-    let feedback = await dbClient
+    // let feedback = await dbClient
+    //   .db(dbName)
+    //   .collection('customer_feedback')
+    //   .findOne({ _id: new ObjectId(args.data.feedbackId) });
+    // await notificationResolvers.helper.createAnswerFeedbackEarnedNotificationToMember(
+    //   feedback.customerId,
+    //   args.data.userId,
+    //   args.data.amount,
+    //   answerFeedback.insertedId.toString()
+    // );
+
+    const feedbackAnswerInfo = await dbClient
       .db(dbName)
-      .collection('customer_feedback')
-      .findOne({ _id: new ObjectId(args.data.feedbackId) });
-    await notificationResolvers.helper.createAnswerFeedbackEarnedNotificationToMember(
-      feedback.customerId,
-      args.data.userId,
-      args.data.amount,
-      answerFeedback.insertedId.toString()
-    );
+      .collection('offers_info')
+      .findOne({ type: 'feedback_answer' });
+
+    const currentUserInfo = await dbClient
+      .db(dbName)
+      .collection('users')
+      .findOne({ _id: new ObjectId(args.data.userId) });
 
     await dbClient
       .db(dbName)
-      .collection('member_earnings')
-      .insertOne({
-        entityId: new ObjectId(answerFeedback.insertedId.toString()),
-        type: 'offer',
-        amount: args.data.amount,
-        memberId: new ObjectId(args.data.userId),
-        payed: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      .collection('users')
+      .updateOne(
+        { _id: new ObjectId(args.data.userId) },
+        {
+          $set: {
+            currentBalance:
+              Number(currentUserInfo.currentBalance) + Number(feedbackAnswerInfo.amount),
+          },
+        }
+      );
 
     return answerFeedback.insertedId.toString();
   } catch (e) {

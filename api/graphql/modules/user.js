@@ -32,6 +32,7 @@ const typeDefs = gql`
     email: String!
     hasUploads: Boolean
     pictureUrl: String
+    currentBalance: Float
     dob: Date
     gender: String
     locationCity: String
@@ -152,9 +153,7 @@ const typeDefs = gql`
   input AnswerFeedbackInput {
     feedbackId: ID!
     userId: ID!
-    answers: [AnswerFeedbackQuestionsInput]
-    amount: Int
-    memberUploadId: ID
+    answers: [AnswerFeedbackQuestionsInput!]!
   }
 
   extend type Mutation {
