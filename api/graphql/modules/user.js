@@ -72,7 +72,7 @@ const typeDefs = gql`
     _id: ID!
     userId: ID!
     look: UploadPhoto!
-    questions: [OfferQuestion]
+    questions: [OfferQuestion!]!
     earnings: Float!
     active: Boolean!
     createdAt: Date!
