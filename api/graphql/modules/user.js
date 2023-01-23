@@ -16,6 +16,7 @@ const typeDefs = gql`
     getFollowings(id: ID): [Follower]
     isFollowing(userId1: ID, userId2: ID): Boolean
     getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
+    getMyFeedbackOffers(limit: Int, page: Int): [Offer!]!
     getUserCompletedAnswers(id: ID, limit: Int, page: Int): [FeedbackAnswer]
     getUserAnswer(id: ID): FeedbackAnswer
     getUserTotalLooks(id: ID): Int
@@ -31,6 +32,7 @@ const typeDefs = gql`
     email: String!
     hasUploads: Boolean
     pictureUrl: String
+    currentBalance: Float
     dob: Date
     gender: String
     locationCity: String
@@ -65,6 +67,23 @@ const typeDefs = gql`
     categories: [String]
     products: [String]
     uploads: [UploadPhoto]
+  }
+
+  type Offer {
+    _id: ID!
+    userId: ID!
+    look: UploadPhoto!
+    questions: [OfferQuestion!]!
+    earnings: Float!
+    active: Boolean!
+    createdAt: Date!
+    updatedAt: Date!
+  }
+
+  type OfferQuestion {
+    _id: ID
+    text: String
+    answers: [String]
   }
 
   type FeedbackAnswers {
@@ -134,9 +153,7 @@ const typeDefs = gql`
   input AnswerFeedbackInput {
     feedbackId: ID!
     userId: ID!
-    answers: [AnswerFeedbackQuestionsInput]
-    amount: Int
-    memberUploadId: ID
+    answers: [AnswerFeedbackQuestionsInput!]!
   }
 
   extend type Mutation {

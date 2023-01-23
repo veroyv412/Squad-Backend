@@ -65,6 +65,7 @@ const typeDefs = gql`
     homepage: Boolean
     hidden: Boolean
     createdAt: String!
+    approved: Boolean
   }
 
   input UploadPhotoInput {

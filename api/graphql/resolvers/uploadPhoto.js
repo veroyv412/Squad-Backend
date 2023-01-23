@@ -629,18 +629,18 @@ const uploadsFilter = async (root, args, context, info) => {
 
 /* MUTATIONS */
 
-const storeUploadCarePhoto = async(uuid) => {
-  if ( !uuid ){
-    throw new Error('UUID is Required')
+const storeUploadCarePhoto = async (uuid) => {
+  if (!uuid) {
+    throw new Error('UUID is Required');
   }
 
   const config = {
     method: 'put',
     url: `https://api.uploadcare.com/files/${uuid}/storage/`,
     headers: {
-      'Authorization': `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`,
-      'Accept': 'application/vnd.uploadcare-v0.7+json',
-    }
+      Authorization: `Uploadcare.Simple ${process.env.UPLOADCARE_PUBLIC_KEY}:${process.env.UPLOADCARE_SECRET_KEY}`,
+      Accept: 'application/vnd.uploadcare-v0.7+json',
+    },
   };
 
   try {
@@ -652,7 +652,7 @@ const storeUploadCarePhoto = async(uuid) => {
   } catch (e) {
     throw new Error(e);
   }
-}
+};
 
 const addUploadedPhoto = async (parent, args, context) => {
   await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(
@@ -688,7 +688,13 @@ const addUploadedPhoto = async (parent, args, context) => {
       .db(dbName)
       .collection('products')
       .findOne({
-        $or: [{ _id: args.uploadPhoto.product?._id }, { name: args.uploadPhoto.product?.name }],
+        $and: [
+          {
+            $or: [{ _id: args.uploadPhoto.product?._id }, { name: args.uploadPhoto.product?.name }],
+          },
+          { brandId: brand?._id },
+          { categoryId: category._id },
+        ],
       });
 
     if (brand) {
@@ -727,7 +733,7 @@ const addUploadedPhoto = async (parent, args, context) => {
     }
 
     photo.approved =
-      brand.verified === true && category.verified === true && product.verified === true;
+      brand?.verified === true && category?.verified === true && product?.verified === true;
 
     let upload = await dbClient.db(dbName).collection('uploads').insertOne(photo);
 
@@ -736,6 +742,21 @@ const addUploadedPhoto = async (parent, args, context) => {
         upload.insertedId.toString(),
         new Date()
       );
+      const feedbackAnswerInfo = await dbClient
+        .db(dbName)
+        .collection('offers_info')
+        .findOne({ type: 'feedback_answer' });
+      await dbClient
+        .db(dbName)
+        .collection('feedback_offers')
+        .insertOne({
+          memberId: new ObjectId(args.uploadPhoto.userId),
+          lookId: new ObjectId(upload.insertedId.toString()),
+          active: true,
+          earnings: Number(feedbackAnswerInfo.amount),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
       if (product.verified) {
         await compensationResolvers.helper.compensateApprovedProduct(
           upload.insertedId.toString(),
@@ -748,7 +769,7 @@ const addUploadedPhoto = async (parent, args, context) => {
       upload.insertedId.toString()
     );
 
-    await storeUploadCarePhoto(args.uploadPhoto.uuid)
+    await storeUploadCarePhoto(args.uploadPhoto.uuid);
 
     return upload.insertedId.toString();
   } catch (e) {
