@@ -1,4 +1,4 @@
-const { AuthenticationError } = require('apollo-server');
+const { AuthenticationError, ApolloError } = require('apollo-server');
 const { RealmApiClient } = require('../../utils/Realm');
 const realmApi = new RealmApiClient();
 const { dbClient, dbName } = require('../../config/mongo');
@@ -49,32 +49,33 @@ const setRefreshTokenCookie = (res, refreshToken, cookieOptions) => {
 };
 
 const getTokenByEmailAndPassword = async (_, args, context) => {
+  let res;
+
   try {
-    const { access_token, refresh_token, user_id } = await realmApi.getEmailPasswordAccessToken(
-      args.email,
-      args.password
-    );
-
-    const reqDbUser = await dbClient.db(dbName).collection('users').findOne({ stitchId: user_id });
-
-    if (reqDbUser && reqDbUser?.status === 'pending') {
-      throw new Error('User not confirmed');
-    }
-
-    const accessTokenExpiry = new Date(jwt.decode(access_token).exp * 1000);
-    setAccessTokenCookie(context.res, access_token, {
-      expires: accessTokenExpiry,
-    });
-
-    const refreshTokenExpiry = new Date(jwt.decode(refresh_token).exp * 1000);
-    setRefreshTokenCookie(context.res, refresh_token, {
-      expires: refreshTokenExpiry,
-    });
-
-    return { access_token, refresh_token, user_id };
+    res = await realmApi.getEmailPasswordAccessToken(args.email, args.password);
   } catch (e) {
     throw new AuthenticationError(e);
   }
+
+  const { access_token, refresh_token, user_id } = res;
+
+  const reqDbUser = await dbClient.db(dbName).collection('users').findOne({ stitchId: user_id });
+
+  if (reqDbUser && reqDbUser?.status !== 'confirmed') {
+    throw new ApolloError('User not confirmed', 'UNVERIFIED');
+  }
+
+  const accessTokenExpiry = new Date(jwt.decode(access_token).exp * 1000);
+  setAccessTokenCookie(context.res, access_token, {
+    expires: accessTokenExpiry,
+  });
+
+  const refreshTokenExpiry = new Date(jwt.decode(refresh_token).exp * 1000);
+  setRefreshTokenCookie(context.res, refresh_token, {
+    expires: refreshTokenExpiry,
+  });
+
+  return { access_token, refresh_token, user_id };
 };
 
 const getAccessTokenByRefreshToken = async (_, args, context) => {
