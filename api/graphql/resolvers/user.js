@@ -872,8 +872,8 @@ const answerFeedback = async (parent, args) => {
 
     const feedbackAnswerInfo = await dbClient
       .db(dbName)
-      .collection('offers_info')
-      .findOne({ type: 'feedback_answer' });
+      .collection('feedback_offers')
+      .findOne({ _id: new ObjectId(args.data.feedbackId) });
 
     const currentUserInfo = await dbClient
       .db(dbName)
@@ -888,7 +888,7 @@ const answerFeedback = async (parent, args) => {
         {
           $set: {
             currentBalance:
-              Number(currentUserInfo.currentBalance) + Number(feedbackAnswerInfo.amount),
+              Number(currentUserInfo.currentBalance) + Number(feedbackAnswerInfo.earnings),
           },
         }
       );

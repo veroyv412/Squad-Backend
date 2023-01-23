@@ -742,6 +742,10 @@ const addUploadedPhoto = async (parent, args, context) => {
         upload.insertedId.toString(),
         new Date()
       );
+      const feedbackAnswerInfo = await dbClient
+        .db(dbName)
+        .collection('offers_info')
+        .findOne({ type: 'feedback_answer' });
       await dbClient
         .db(dbName)
         .collection('feedback_offers')
@@ -749,7 +753,7 @@ const addUploadedPhoto = async (parent, args, context) => {
           memberId: new ObjectId(args.uploadPhoto.userId),
           lookId: new ObjectId(upload.insertedId.toString()),
           active: true,
-          earnings: 0.5,
+          earnings: Number(feedbackAnswerInfo.amount),
           createdAt: new Date(),
           updatedAt: new Date(),
         });
