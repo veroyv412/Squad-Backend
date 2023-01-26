@@ -68,6 +68,7 @@ const startServer = async () => {
       require('./api/graphql/modules/compensation'),
       require('./api/graphql/modules/notification'),
       require('./api/graphql/modules/analytics'),
+      require('./api/graphql/modules/shared'),
       require('./api/graphql/modules/authentication'),
     ],
   });

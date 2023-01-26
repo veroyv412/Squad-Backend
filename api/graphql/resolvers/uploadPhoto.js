@@ -25,50 +25,62 @@ const getUploadedPhotos = async (root, args, context, info) => {
     .collection('uploads')
     .aggregate([
       {
-        $lookup: {
-          from: 'users',
-          localField: 'memberId',
-          foreignField: '_id',
-          as: 'member',
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'memberId',
+                foreignField: '_id',
+                as: 'member',
+              },
+            },
+            {
+              $lookup: {
+                from: 'brands',
+                localField: 'brandId',
+                foreignField: '_id',
+                as: 'brand',
+              },
+            },
+            {
+              $lookup: {
+                from: 'categories',
+                localField: 'categoryId',
+                foreignField: '_id',
+                as: 'category',
+              },
+            },
+            {
+              $lookup: {
+                from: 'products',
+                localField: 'productId',
+                foreignField: '_id',
+                as: 'product',
+              },
+            },
+            { $skip: offset },
+            { $limit: limit },
+          ],
         },
       },
-      {
-        $lookup: {
-          from: 'brands',
-          localField: 'brandId',
-          foreignField: '_id',
-          as: 'brand',
-        },
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'categoryId',
-          foreignField: '_id',
-          as: 'category',
-        },
-      },
-      {
-        $lookup: {
-          from: 'products',
-          localField: 'productId',
-          foreignField: '_id',
-          as: 'product',
-        },
-      },
-      { $skip: offset },
-      { $limit: limit },
     ])
     .toArray();
 
-  for (let upload of uploads) {
+  for (let upload of uploads[0].data) {
     upload.brand = upload.brand[0];
     upload.member = upload.member[0];
     upload.category = upload.category[0];
     upload.product = upload.product[0];
   }
 
-  return uploads;
+  return {
+    data: uploads[0].data,
+    metadata: {
+      totalCount: uploads[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getUpload = async (root, { id }, context, info) => {
