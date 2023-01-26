@@ -758,6 +758,29 @@ const addUploadedPhoto = async (parent, args, context) => {
         .db(dbName)
         .collection('offers_info')
         .findOne({ type: 'feedback_answer' });
+      const lookUploadInfo = await dbClient
+        .db(dbName)
+        .collection('offers_info')
+        .findOne({ type: 'look_post' });
+
+      const currentUserInfo = await dbClient
+        .db(dbName)
+        .collection('users')
+        .findOne({ _id: new ObjectId(args.uploadPhoto.userId) });
+
+      await dbClient
+        .db(dbName)
+        .collection('users')
+        .updateOne(
+          { _id: new ObjectId(args.uploadPhoto.userId) },
+          {
+            $set: {
+              currentBalance:
+                Number(currentUserInfo.currentBalance) + Number(lookUploadInfo.amount),
+            },
+          }
+        );
+
       await dbClient
         .db(dbName)
         .collection('feedback_offers')
@@ -783,7 +806,10 @@ const addUploadedPhoto = async (parent, args, context) => {
 
     await storeUploadCarePhoto(args.uploadPhoto.uuid);
 
-    return upload.insertedId.toString();
+    return {
+      isApproved: photo.approved,
+      id: upload.insertedId.toString(),
+    };
   } catch (e) {
     return e;
   }

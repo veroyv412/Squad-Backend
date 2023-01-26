@@ -130,8 +130,13 @@ const typeDefs = gql`
     errorCount: Int
   }
 
+  type UploadedPhotoResponse {
+    isApproved: Boolean
+    id: String
+  }
+
   extend type Mutation {
-    addUploadedPhoto(uploadPhoto: UploadPhotoInput!): String
+    addUploadedPhoto(uploadPhoto: UploadPhotoInput!): UploadedPhotoResponse
     updateUploadedPhoto(uploadPhoto: UploadPhotoInput!): String
     verifyUploadedPhoto(uploadPhoto: UploadPhotoInput!): String
     likeUploadedPhoto(id: ID, userId: ID): Boolean
