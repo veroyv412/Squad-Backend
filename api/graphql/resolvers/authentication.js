@@ -130,6 +130,7 @@ const registerUser = async (_, args, context) => {
       role: isAdmin ? 'customer' : 'member',
       email: email,
       status: 'pending',
+      currentBalance: 0,
       username: username,
       createdAt: currentDate,
       updatedAt: currentDate,

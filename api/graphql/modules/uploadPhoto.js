@@ -4,7 +4,7 @@ const uploadPhotoResolvers = require('../resolvers/uploadPhoto');
 
 const typeDefs = gql`
   extend type Query {
-    getUploadedPhotos(productIds: [String], limit: Int, page: Int): [UploadPhoto!]!
+    getUploadedPhotos(productIds: [String], limit: Int, page: Int): UploadedPhotos!
     getUpload(id: String): UploadPhoto!
     getUserUploads(userId: String, limit: Int, page: Int): [UploadPhoto]
     getBrandUploads(brandId: String, userId: String): BrandUpload
@@ -68,6 +68,11 @@ const typeDefs = gql`
     approved: Boolean
   }
 
+  type UploadedPhotos {
+    data: [UploadPhoto!]!
+    metadata: Metadata!
+  }
+
   input UploadPhotoInput {
     _id: ID
     brand: BrandInput
@@ -125,8 +130,13 @@ const typeDefs = gql`
     errorCount: Int
   }
 
+  type UploadedPhotoResponse {
+    isApproved: Boolean
+    id: String
+  }
+
   extend type Mutation {
-    addUploadedPhoto(uploadPhoto: UploadPhotoInput!): String
+    addUploadedPhoto(uploadPhoto: UploadPhotoInput!): UploadedPhotoResponse
     updateUploadedPhoto(uploadPhoto: UploadPhotoInput!): String
     verifyUploadedPhoto(uploadPhoto: UploadPhotoInput!): String
     likeUploadedPhoto(id: ID, userId: ID): Boolean

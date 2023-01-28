@@ -6,7 +6,7 @@ const typeDefs = gql`
   extend type Query {
     user(id: ID!): User
     userBy(data: String!): User
-    me: User
+    me: User!
     users: [User]
     getSpotlightMembers(brandId: ID): [UploadPhoto]
     getUserByFirebaseId(firebaseId: ID!): User

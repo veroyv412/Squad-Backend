@@ -25,50 +25,63 @@ const getUploadedPhotos = async (root, args, context, info) => {
     .collection('uploads')
     .aggregate([
       {
-        $lookup: {
-          from: 'users',
-          localField: 'memberId',
-          foreignField: '_id',
-          as: 'member',
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            { $sort: { createdAt: -1 } },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'memberId',
+                foreignField: '_id',
+                as: 'member',
+              },
+            },
+            {
+              $lookup: {
+                from: 'brands',
+                localField: 'brandId',
+                foreignField: '_id',
+                as: 'brand',
+              },
+            },
+            {
+              $lookup: {
+                from: 'categories',
+                localField: 'categoryId',
+                foreignField: '_id',
+                as: 'category',
+              },
+            },
+            {
+              $lookup: {
+                from: 'products',
+                localField: 'productId',
+                foreignField: '_id',
+                as: 'product',
+              },
+            },
+            { $skip: offset },
+            { $limit: limit },
+          ],
         },
       },
-      {
-        $lookup: {
-          from: 'brands',
-          localField: 'brandId',
-          foreignField: '_id',
-          as: 'brand',
-        },
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'categoryId',
-          foreignField: '_id',
-          as: 'category',
-        },
-      },
-      {
-        $lookup: {
-          from: 'products',
-          localField: 'productId',
-          foreignField: '_id',
-          as: 'product',
-        },
-      },
-      { $skip: offset },
-      { $limit: limit },
     ])
     .toArray();
 
-  for (let upload of uploads) {
+  for (let upload of uploads[0].data) {
     upload.brand = upload.brand[0];
     upload.member = upload.member[0];
     upload.category = upload.category[0];
     upload.product = upload.product[0];
   }
 
-  return uploads;
+  return {
+    data: uploads[0].data,
+    metadata: {
+      totalCount: uploads[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getUpload = async (root, { id }, context, info) => {
@@ -746,6 +759,29 @@ const addUploadedPhoto = async (parent, args, context) => {
         .db(dbName)
         .collection('offers_info')
         .findOne({ type: 'feedback_answer' });
+      const lookUploadInfo = await dbClient
+        .db(dbName)
+        .collection('offers_info')
+        .findOne({ type: 'look_post' });
+
+      const currentUserInfo = await dbClient
+        .db(dbName)
+        .collection('users')
+        .findOne({ _id: new ObjectId(args.uploadPhoto.userId) });
+
+      await dbClient
+        .db(dbName)
+        .collection('users')
+        .updateOne(
+          { _id: new ObjectId(args.uploadPhoto.userId) },
+          {
+            $set: {
+              currentBalance:
+                Number(currentUserInfo.currentBalance) + Number(lookUploadInfo.amount),
+            },
+          }
+        );
+
       await dbClient
         .db(dbName)
         .collection('feedback_offers')
@@ -771,7 +807,10 @@ const addUploadedPhoto = async (parent, args, context) => {
 
     await storeUploadCarePhoto(args.uploadPhoto.uuid);
 
-    return upload.insertedId.toString();
+    return {
+      isApproved: photo.approved,
+      id: upload.insertedId.toString(),
+    };
   } catch (e) {
     return e;
   }
