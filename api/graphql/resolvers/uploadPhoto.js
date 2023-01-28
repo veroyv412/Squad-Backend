@@ -28,6 +28,7 @@ const getUploadedPhotos = async (root, args, context, info) => {
         $facet: {
           metadata: [{ $count: 'totalCount' }],
           data: [
+            { $sort: { createdAt: -1 } },
             {
               $lookup: {
                 from: 'users',
