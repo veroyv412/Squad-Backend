@@ -29,7 +29,7 @@ const typeDefs = gql`
     _id: ID!
     displayName: String!
     username: String
-    email: String!
+    email: String
     hasUploads: Boolean
     pictureUrl: String
     currentBalance: Float

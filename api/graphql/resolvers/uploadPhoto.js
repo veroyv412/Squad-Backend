@@ -255,11 +255,11 @@ const getFlaggedUploads = async (root, args, context, info) => {
 };
 
 const getUserUploads = async (root, args, context, info) => {
-  if (!args.userId) {
+  if (!args.userId && !args.username) {
     return [];
   }
 
-  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.userId);
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   let limit = args.limit || 10;
   let offset = args.page || 1;
@@ -302,14 +302,6 @@ const getUserUploads = async (root, args, context, info) => {
         },
       },
       {
-        $lookup: {
-          from: 'member_earnings',
-          localField: '_id',
-          foreignField: 'entityId',
-          as: 'memberEarnings',
-        },
-      },
-      {
         $addFields: {
           brand: { $arrayElemAt: ['$brands', 0] },
           category: { $arrayElemAt: ['$categories', 0] },
@@ -318,7 +310,18 @@ const getUserUploads = async (root, args, context, info) => {
           earning: { $arrayElemAt: ['$memberEarnings', 0] },
         },
       },
-      { $match: { memberId: new ObjectId(args.userId) } },
+      {
+        $match: {
+          $or: [
+            { memberId: new ObjectId(args.userId) },
+            {
+              $expr: {
+                $eq: [args.username, '$member.username'],
+              },
+            },
+          ],
+        },
+      },
       { $sort: { createdAt: -1 } },
       { $skip: offset },
       { $limit: limit },

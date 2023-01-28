@@ -1,4 +1,6 @@
 const { dbClient, dbName } = require('../../config/mongo');
+const { RealmApiClient } = require('../../utils/Realm');
+const realmApi = new RealmApiClient();
 const ObjectId = require('mongodb').ObjectId;
 const sgMail = require('@sendgrid/mail');
 const jwt = require('jsonwebtoken');
@@ -18,14 +20,56 @@ const users = async (root, args, context, info) => {
 };
 
 const user = async (root, { id }, context, info) => {
+  if (!context.req.cookies.access_token) {
+    throw new AuthenticationError();
+  }
+
+  await realmApi.isAccessTokenValid(context.req.cookies.access_token);
+
+  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+  const reqDbUser = await dbClient.db(dbName).collection('users').findOne({ stitchId: reqUserId });
+  if (!reqDbUser) {
+    throw new Error('User not found');
+  }
+
+  const isSameProfile = reqDbUser._id.toString() === id;
+  const isAdmin = reqDbUser?.role === 'admin';
+
   const usersRef = dbClient.db(dbName).collection('users');
 
   const user = await usersRef.findOne({ _id: new ObjectId(id) });
 
-  return user;
+  if (!user) throw new Error('User does not exist');
+
+  if (isSameProfile || isAdmin) {
+    return user;
+  } else {
+    return {
+      _id: user._id,
+      displayName: user.displayName,
+      username: user.username,
+      pictureUrl: user.pictureUrl,
+    };
+  }
 };
 
 const userBy = async (root, { data }, context, info) => {
+  if (!context.req.cookies.access_token) {
+    throw new AuthenticationError();
+  }
+
+  await realmApi.isAccessTokenValid(context.req.cookies.access_token);
+
+  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+  const reqDbUser = await dbClient.db(dbName).collection('users').findOne({ stitchId: reqUserId });
+  if (!reqDbUser) {
+    throw new Error('User not found');
+  }
+
+  const isSameProfile =
+    reqDbUser.username.toString() === data || reqDbUser.email.toString() === data;
+  const isAdmin = reqDbUser?.role === 'admin';
+
   const usersRef = dbClient.db(dbName).collection('users');
   let or = {
     $or: [{ username: data }, { email: data }],
@@ -33,14 +77,21 @@ const userBy = async (root, { data }, context, info) => {
 
   const user = await usersRef.findOne(or);
 
-  return user;
+  if (!user) throw new Error('User does not exist');
+
+  if (isSameProfile || isAdmin) {
+    return user;
+  } else {
+    return {
+      _id: user._id,
+      displayName: user.displayName,
+      username: user.username,
+      pictureUrl: user.pictureUrl,
+    };
+  }
 };
 
 const me = async (root, args, context, info) => {
-  if (!context.req.cookies.access_token) {
-    throw new AuthenticationError();
-  }
-
   await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
@@ -150,7 +201,7 @@ const getUserLastUpdatedDate = async (root, { id }, context, info) => {
 };
 
 const getFollowers = async (root, args, context, info) => {
-  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   let limit = args.limit || 10;
   let offset = args.page || 1;
@@ -179,7 +230,7 @@ const getFollowers = async (root, args, context, info) => {
       { $match: { userId2: new ObjectId(args.id) } },
       { $sort: { createdAt: -1 } },
       { $skip: offset },
-      { $limit: limit }
+      { $limit: limit },
     ])
     .toArray();
 
@@ -221,7 +272,7 @@ const getFollowings = async (root, args, context, info) => {
       { $match: { userId1: new ObjectId(args.id) } },
       { $sort: { createdAt: -1 } },
       { $skip: offset },
-      { $limit: limit }
+      { $limit: limit },
     ])
     .toArray();
 
