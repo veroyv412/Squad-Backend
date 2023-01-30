@@ -22,7 +22,8 @@ const typeDefs = gql`
     getFlaggedUploads: [UploadPhoto]
     getApprovedNotCredited: [UploadPhoto]
     getApprovedNotCreditedUploadedProducts: [UploadPhoto]
-    getLookbookCollection(_id: ID!, ownerId: ID!): [LookbookCollection]
+    getLookbookCollection(_id: ID!): LookbookCollection
+    getUserLookbookCollections(userId: ID!, limit: Int, page: Int): [LookbookCollection]
   }
 
   input FilterInput {
@@ -163,7 +164,7 @@ const typeDefs = gql`
     setHomepageUploadedPhoto(ids: [ID]): String
     createLookbookCollection(data: LookbookCollectionInput):ID
     updateLookbookCollection(data: LookbookCollectionInput):ID
-    deleteLookbookCollection(_id: ID!, ownerId: ID!): Boolean
+    deleteLookbookCollection(_id: ID!): Boolean
   }
 `;
 

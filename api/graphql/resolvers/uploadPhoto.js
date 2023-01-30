@@ -529,6 +529,46 @@ const uploadsSearch = async (root, args, context, info) => {
   return uploads;
 };
 
+const getUserLookbookCollections = async (root, args, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
+
+  let limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset - 1) * limit;
+
+  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+  const reqDbUser = await dbClient
+      .db(dbName)
+      .collection('users')
+      .findOne({ stitchId: reqUserId });
+
+  let match = {};
+  if ( args.userId != reqDbUser._id.toString() ){
+    match.private = false;
+  } else {
+    match = { ownerId: new ObjectId(args.userId) }
+  }
+
+  const collection = await dbClient
+      .db(dbName)
+      .collection('lookbook_collection')
+      .aggregate([
+        {
+          $lookup: {
+            from: 'uploads',
+            localField: 'looks',
+            foreignField: '_id',
+            as: 'looks',
+          },
+        },
+        { $match: match },
+        { $skip: offset },
+        { $limit: limit }
+      ]).toArray();
+
+  return collection;
+}
+
 const getLookbookCollection = async (root, args, context, info) => {
   await authenticationResolvers.helper.assertIsLoggedIn(context);
 
@@ -538,39 +578,23 @@ const getLookbookCollection = async (root, args, context, info) => {
       .collection('users')
       .findOne({ stitchId: reqUserId });
 
-  const collection = dbClient
+  const collection = await dbClient
       .db(dbName)
       .collection('lookbook_collection')
       .aggregate([
         {
           $lookup: {
             from: 'uploads',
-            let: { uploads: '$uploads' },
-            pipeline: [
-              { $match: { $expr: { $in: ['$_id', '$$uploads'] } } },
-              {
-                $lookup: {
-                  from: 'users',
-                  let: { memberId: '$memberId' },
-                  pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$memberId'] } } }],
-                  as: 'member',
-                },
-              },
-              {
-                $addFields: {
-                  member: { $arrayElemAt: ['$member', 0] },
-                },
-              },
-              { $match: { 'member._id': new ObjectId(args.id) } },
-            ],
-            as: 'uploads',
+            localField: 'looks',
+            foreignField: '_id',
+            as: 'looks',
           },
         },
         { $match: { _id: new ObjectId(args._id) } },
       ]).toArray();
 
   if ( collection && collection.length > 0 && collection[0].ownerId && collection[0].ownerId.toString() == reqDbUser._id.toString() ){
-    return collection
+    return collection[0]
   }
 
   throw new Error("Forbidden")
@@ -1325,9 +1349,10 @@ const createLookbookCollection = async (parent, args, context) => {
     await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.data.ownerId)
     const ids = args.data.looks.map((u) => new ObjectId(u));
 
+    const private = args.data.private === false ? args.data.private : true
     const collectionData = {
       ownerId: new ObjectId(args.data.ownerId),
-      private: args.data.private || true,
+      private: private,
       title: args.data.title,
       looks: ids,
     }
@@ -1351,10 +1376,10 @@ const updateLookbookCollection = async (parent, args, context) => {
 
     const ids = args.data.looks.map((u) => new ObjectId(u));
 
+    const private = args.data.private === false ? args.data.private : true
     const collectionData = {
       ...collection,
-      ownerId: new ObjectId(args.data.ownerId),
-      private: args.data.private ? args.data.private : true,
+      private: private,
       title: args.data.title,
       looks: ids,
     }
@@ -1376,7 +1401,7 @@ const updateLookbookCollection = async (parent, args, context) => {
 
 const deleteLookbookCollection = async (parent, args, context) => {
   try {
-    await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.ownerId)
+    await authenticationResolvers.helper.assertIsLoggedIn(context)
 
     await dbClient
         .db(dbName)
@@ -1402,6 +1427,7 @@ module.exports = {
     getPendingUploads,
     getFlaggedUploads,
     getLookbookCollection,
+    getUserLookbookCollections
   },
   mutations: {
     addUploadedPhoto,
