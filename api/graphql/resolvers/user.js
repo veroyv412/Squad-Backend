@@ -207,81 +207,81 @@ const getFollowers = async (root, args, context, info) => {
   let offset = args.page || 1;
   offset = (offset - 1) * limit;
 
-  const followers = await dbClient
+  const followersEntries = await dbClient
     .db(dbName)
     .collection('followers')
     .aggregate([
+      { $match: { followingId: new ObjectId(args.id) } },
       {
-        $lookup: {
-          from: 'users',
-          localField: 'userId1',
-          foreignField: '_id',
-          as: 'user1',
-        },
+        $project: { _id: 0 },
       },
       {
         $lookup: {
           from: 'users',
-          localField: 'userId2',
+          localField: 'followerId',
           foreignField: '_id',
-          as: 'user2',
+          as: 'user',
         },
       },
-      { $match: { userId2: new ObjectId(args.id) } },
-      { $sort: { createdAt: -1 } },
       { $skip: offset },
       { $limit: limit },
     ])
     .toArray();
 
-  for (let follower of followers) {
-    follower.user1 = follower.user1[0];
-    follower.user2 = follower.user2[0];
+  const followers = [];
+
+  for (let followerEntry of followersEntries) {
+    followers.push({
+      username: followerEntry.user[0].username,
+      displayName: followerEntry.user[0].displayName,
+      pictureUrl: followerEntry.user[0].pictureUrl,
+    });
   }
 
   return followers;
 };
 
 const getFollowings = async (root, args, context, info) => {
-  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+  await authenticationResolvers.helper.assertIsLoggedIn(context, args.id);
 
   let limit = args.limit || 10;
   let offset = args.page || 1;
   offset = (offset - 1) * limit;
 
-  const followers = await dbClient
+  const followingEntries = await dbClient
     .db(dbName)
     .collection('followers')
     .aggregate([
+      { $match: { followerId: new ObjectId(args.id) } },
       {
-        $lookup: {
-          from: 'users',
-          localField: 'userId1',
-          foreignField: '_id',
-          as: 'user1',
-        },
+        $project: { _id: 0 },
       },
       {
         $lookup: {
           from: 'users',
-          localField: 'userId2',
+          localField: 'followingId',
           foreignField: '_id',
-          as: 'user2',
+          as: 'user',
         },
       },
-      { $match: { userId1: new ObjectId(args.id) } },
-      { $sort: { createdAt: -1 } },
       { $skip: offset },
       { $limit: limit },
     ])
     .toArray();
 
-  for (let follower of followers) {
-    follower.user1 = follower.user1[0];
-    follower.user2 = follower.user2[0];
+  console.log(followingEntries);
+
+  const following = [];
+
+  for (let followingEntry of followingEntries) {
+    following.push({
+      username: followingEntry.user[0].username,
+      displayName: followingEntry.user[0].displayName,
+      pictureUrl: followingEntry.user[0].pictureUrl,
+    });
   }
 
-  return followers;
+  return following;
 };
 
 const getLookbookByUserId = async (root, { userId, limit, page }, context, info) => {
