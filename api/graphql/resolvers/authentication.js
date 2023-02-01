@@ -1,4 +1,4 @@
-const { AuthenticationError, ApolloError } = require('apollo-server');
+const { AuthenticationError, ApolloError, ForbiddenError } = require('apollo-server');
 const { RealmApiClient } = require('../../utils/Realm');
 const realmApi = new RealmApiClient();
 const { dbClient, dbName } = require('../../config/mongo');
@@ -211,7 +211,7 @@ const assertIsLoggedInAsAdminOrProfileId = async (context, id) => {
       return true;
     }
 
-    throw new Error('Forbidden');
+    throw new ForbiddenError('Action not allowed');
   } catch (e) {
     throw e;
   }

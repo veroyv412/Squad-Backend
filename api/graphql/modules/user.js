@@ -14,7 +14,7 @@ const typeDefs = gql`
     getLookbook(id: ID!): Lookbook
     getFollowers(id: ID, limit: Int, page: Int): [User!]!
     getFollowings(id: ID, limit: Int, page: Int): [User!]!
-    isFollowing(userId1: ID, userId2: ID): Boolean
+    isFollowing(userId1: ID, userId2: ID): Boolean!
     getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
     getMyFeedbackOffers(limit: Int, page: Int): [Offer!]!
     getUserCompletedAnswers(id: ID, limit: Int, page: Int): [FeedbackAnswer]
@@ -157,8 +157,8 @@ const typeDefs = gql`
     sendPhoneNumberNotificationEmail(id: ID): Boolean
     updateUserStatus(id: ID): Boolean
     deleteProfile(id: ID): Boolean
-    follow(userId1: ID, userId2: ID): String
-    unfollow(userId1: ID, userId2: ID): String
+    follow(from: ID!, to: ID!): Boolean!
+    unfollow(remove: ID!, from: ID!): Boolean!
     answerFeedback(data: AnswerFeedbackInput): String
   }
 `;

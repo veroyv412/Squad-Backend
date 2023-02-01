@@ -269,8 +269,6 @@ const getFollowings = async (root, args, context, info) => {
     ])
     .toArray();
 
-  console.log(followingEntries);
-
   const following = [];
 
   for (let followingEntry of followingEntries) {
@@ -837,39 +835,40 @@ const sendAfterConfirmationEmail = async (parent, args) => {
   return true;
 };
 
-const follow = async (parent, args) => {
+const follow = async (parent, args, context) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.from);
+
   try {
-    let follower = {
-      userId1: new ObjectId(args.userId1),
-      userId2: new ObjectId(args.userId2),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const follower = {
+      followerId: new ObjectId(args.from),
+      followingId: new ObjectId(args.to),
     };
 
-    follower = await dbClient.db(dbName).collection('followers').insertOne(follower);
+    await dbClient
+      .db(dbName)
+      .collection('followers')
+      .updateOne(follower, { $setOnInsert: follower }, { upsert: true });
 
-    await notificationResolvers.helper.createFollowNotificationToMember(args.userId1, args.userId2);
-
-    return follower.insertedId.toString();
+    return true;
   } catch (e) {
-    console.log(e);
     return e;
   }
 };
 
-const unfollow = async (parent, args) => {
+const unfollow = async (parent, args, context) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.remove);
+
   try {
-    const response = await dbClient
+    await dbClient
       .db(dbName)
       .collection('followers')
       .deleteOne({
-        userId1: new ObjectId(args.userId1),
-        userId2: new ObjectId(args.userId2),
+        followerId: new ObjectId(args.remove),
+        followingId: new ObjectId(args.from),
       });
 
-    return args.userId1;
+    return true;
   } catch (e) {
-    console.log(e);
     return e;
   }
 };
