@@ -70,6 +70,7 @@ const startServer = async () => {
       require('./api/graphql/modules/analytics'),
       require('./api/graphql/modules/shared'),
       require('./api/graphql/modules/authentication'),
+      require('./api/graphql/modules/lookbookCollection'),
     ],
   });
 

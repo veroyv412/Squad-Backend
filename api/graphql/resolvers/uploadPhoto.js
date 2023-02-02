@@ -9,7 +9,7 @@ const _ = require('lodash');
 const { union } = require('lodash');
 const axios = require('axios');
 const dotenv = require('dotenv');
-const jwt = require('jsonwebtoken');
+
 dotenv.config();
 
 const productHelper = require('./product');
@@ -528,77 +528,6 @@ const uploadsSearch = async (root, args, context, info) => {
 
   return uploads;
 };
-
-const getUserLookbookCollections = async (root, args, context, info) => {
-  await authenticationResolvers.helper.assertIsLoggedIn(context);
-
-  let limit = args.limit || 10;
-  let offset = args.page || 1;
-  offset = (offset - 1) * limit;
-
-  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
-  const reqDbUser = await dbClient
-      .db(dbName)
-      .collection('users')
-      .findOne({ stitchId: reqUserId });
-
-  let match = {};
-  if ( args.userId != reqDbUser._id.toString() ){
-    match.private = false;
-  } else {
-    match = { ownerId: new ObjectId(args.userId) }
-  }
-
-  const collection = await dbClient
-      .db(dbName)
-      .collection('lookbook_collection')
-      .aggregate([
-        {
-          $lookup: {
-            from: 'uploads',
-            localField: 'looks',
-            foreignField: '_id',
-            as: 'looks',
-          },
-        },
-        { $match: match },
-        { $skip: offset },
-        { $limit: limit }
-      ]).toArray();
-
-  return collection;
-}
-
-const getLookbookCollection = async (root, args, context, info) => {
-  await authenticationResolvers.helper.assertIsLoggedIn(context);
-
-  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
-  const reqDbUser = await dbClient
-      .db(dbName)
-      .collection('users')
-      .findOne({ stitchId: reqUserId });
-
-  const collection = await dbClient
-      .db(dbName)
-      .collection('lookbook_collection')
-      .aggregate([
-        {
-          $lookup: {
-            from: 'uploads',
-            localField: 'looks',
-            foreignField: '_id',
-            as: 'looks',
-          },
-        },
-        { $match: { _id: new ObjectId(args._id) } },
-      ]).toArray();
-
-  if ( collection && collection.length > 0 && collection[0].ownerId && collection[0].ownerId.toString() == reqDbUser._id.toString() ){
-    return collection[0]
-  }
-
-  throw new Error("Forbidden")
-}
 
 const uploadsFilter = async (root, args, context, info) => {
   const {
@@ -1344,76 +1273,6 @@ const setHomepageUploadedPhoto = async (parent, args) => {
   }
 };
 
-const createLookbookCollection = async (parent, args, context) => {
-  try {
-    await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.data.ownerId)
-    const ids = args.data.looks.map((u) => new ObjectId(u));
-
-    const private = args.data.private === false ? args.data.private : true
-    const collectionData = {
-      ownerId: new ObjectId(args.data.ownerId),
-      private: private,
-      title: args.data.title,
-      looks: ids,
-    }
-
-    const lookbookCollection = await dbClient.db(dbName).collection('lookbook_collection').insertOne(collectionData);
-
-    return lookbookCollection.insertedId;
-  } catch (e) {
-    return e;
-  }
-};
-
-const updateLookbookCollection = async (parent, args, context) => {
-  try {
-    await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.data.ownerId)
-
-    const collection = await dbClient
-        .db(dbName)
-        .collection('lookbook_collection')
-        .findOne({ _id: new ObjectId(args.data._id) });
-
-    const ids = args.data.looks.map((u) => new ObjectId(u));
-
-    const private = args.data.private === false ? args.data.private : true
-    const collectionData = {
-      ...collection,
-      private: private,
-      title: args.data.title,
-      looks: ids,
-    }
-
-    const lookbookCollection = await dbClient.db(dbName)
-        .collection('lookbook_collection')
-        .updateOne(
-            { _id: new ObjectId(args.data._id) },
-            {
-              $set: collectionData
-            }
-        );
-
-    return args.data._id;
-  } catch (e) {
-    return e;
-  }
-};
-
-const deleteLookbookCollection = async (parent, args, context) => {
-  try {
-    await authenticationResolvers.helper.assertIsLoggedIn(context)
-
-    await dbClient
-        .db(dbName)
-        .collection('lookbook_collection')
-        .deleteOne({ _id: new ObjectId(args._id) });
-
-    return true;
-  } catch (e) {
-    return e;
-  }
-};
-
 module.exports = {
   queries: {
     getUpload,
@@ -1426,8 +1285,6 @@ module.exports = {
     getApprovedNotCreditedUploadedProducts,
     getPendingUploads,
     getFlaggedUploads,
-    getLookbookCollection,
-    getUserLookbookCollections
   },
   mutations: {
     addUploadedPhoto,
@@ -1438,9 +1295,6 @@ module.exports = {
     flagUploadedPhoto,
     verifyUploadedPhoto,
     setHomepageUploadedPhoto,
-    createLookbookCollection,
-    updateLookbookCollection,
-    deleteLookbookCollection
   },
   helper: {
     compensate,

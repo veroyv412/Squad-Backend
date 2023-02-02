@@ -22,8 +22,6 @@ const typeDefs = gql`
     getFlaggedUploads: [UploadPhoto]
     getApprovedNotCredited: [UploadPhoto]
     getApprovedNotCreditedUploadedProducts: [UploadPhoto]
-    getLookbookCollection(_id: ID!): LookbookCollection
-    getUserLookbookCollections(userId: ID!, limit: Int, page: Int): [LookbookCollection]
   }
 
   input FilterInput {
@@ -74,14 +72,6 @@ const typeDefs = gql`
     data: [UploadPhoto!]!
     metadata: Metadata!
   }
-  
-   type LookbookCollection {
-    _id: ID
-    ownerId: ID!,
-    private: Boolean!,
-    title: String!,
-    looks: [UploadPhoto]!
-  }
 
   input UploadPhotoInput {
     _id: ID
@@ -98,14 +88,6 @@ const typeDefs = gql`
     uuid: String
   }
 
-  input LookbookCollectionInput {
-    _id: ID
-    ownerId: ID!,
-    private: Boolean!,
-    title: String!,
-    looks: [ID!]!
-  }
-  
   type SearchUser {
     _id: String
     pictureUrl: String
@@ -162,9 +144,6 @@ const typeDefs = gql`
     validateUpload(id: ID!): ValidateError
     flagUploadedPhoto(id: ID!): String
     setHomepageUploadedPhoto(ids: [ID]): String
-    createLookbookCollection(data: LookbookCollectionInput):ID
-    updateLookbookCollection(data: LookbookCollectionInput):ID
-    deleteLookbookCollection(_id: ID!): Boolean
   }
 `;
 
