@@ -232,6 +232,7 @@ const getFollowers = async (root, args, context, info) => {
 
   for (let followerEntry of followersEntries) {
     followers.push({
+      _id: followerEntry.user[0]._id,
       username: followerEntry.user[0].username,
       displayName: followerEntry.user[0].displayName,
       pictureUrl: followerEntry.user[0].pictureUrl,
@@ -273,6 +274,7 @@ const getFollowings = async (root, args, context, info) => {
 
   for (let followingEntry of followingEntries) {
     following.push({
+      _id: followingEntry.user[0]._id,
       username: followingEntry.user[0].username,
       displayName: followingEntry.user[0].displayName,
       pictureUrl: followingEntry.user[0].pictureUrl,
