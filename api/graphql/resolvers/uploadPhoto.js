@@ -9,6 +9,7 @@ const _ = require('lodash');
 const { union } = require('lodash');
 const axios = require('axios');
 const dotenv = require('dotenv');
+
 dotenv.config();
 
 const productHelper = require('./product');
