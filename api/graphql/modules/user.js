@@ -21,9 +21,40 @@ const typeDefs = gql`
     getUserAnswer(id: ID): FeedbackAnswer
     getUserTotalLooks(id: ID): Int
     getUserLastUpdatedDate(id: ID): String
+    getReportedLooks(filter: ReportFilterInput, limit: Int, page: Int): Report
   }
 
   scalar Date
+
+  enum ReportType {
+    WRONG_INFO
+    OFFENSIVE_CONTENT
+    SPAM
+    OTHER
+  }
+  
+  type Report {
+    _id: ID
+    userId: ID!,
+    lookId: ID!,
+    description: String,
+    type: ReportType!
+    deleted: Boolean
+    createdAt: Date
+    updatedAt: Date
+  }
+  
+  input ReportInput {
+    userId: ID!
+    lookId: ID!
+    description: String
+    type: ReportType!
+  }
+  
+  input ReportFilterInput {
+    lookId: ID
+    type: ReportType
+  }
 
   type User {
     _id: ID!
@@ -168,6 +199,8 @@ const typeDefs = gql`
     follow(userId1: ID, userId2: ID): String
     unfollow(userId1: ID, userId2: ID): String
     answerFeedback(data: AnswerFeedbackInput): String
+    reportLook(data: ReportInput!): String
+    deleteReport(id: ID!): Boolean
   }
 `;
 

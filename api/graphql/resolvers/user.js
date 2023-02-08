@@ -915,6 +915,42 @@ const answerFeedback = async (parent, args) => {
   }
 };
 
+const reportLook = async (parent, args, context) => {
+  try {
+    await authenticationResolvers.helper.assertIsLoggedIn(context);
+
+    let reportData = {
+      userId: new ObjectId(args.data.userId),
+      lookId: new ObjectId(args.data.lookId),
+      description: args.data.description,
+      type: args.data.type,
+      deleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const report = await dbClient.db(dbName).collection('looks_report').insertOne(reportData);
+
+    return report.insertedId.toString();
+  } catch (e) {
+    return e;
+  }
+};
+
+const deleteReport = async (parent, args, context) => {
+  try {
+    await authenticationResolvers.helper.assertIsLoggedIn(context);
+
+    await dbClient.db(dbName)
+        .collection('looks_report')
+        .updateOne({ _id: new ObjectId(args.id) }, { $set: { deleted: true } });
+
+    return true;
+  } catch (e) {
+    return e;
+  }
+};
+
 module.exports = {
   queries: {
     users,
@@ -946,5 +982,7 @@ module.exports = {
     follow,
     unfollow,
     answerFeedback,
+    reportLook,
+    deleteReport,
   },
 };
