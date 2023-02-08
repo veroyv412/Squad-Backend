@@ -256,7 +256,7 @@ const getFlaggedUploads = async (root, args, context, info) => {
 };
 
 const getUserUploads = async (root, args, context, info) => {
-  if (!args.userId && !args.username) {
+  if (!args.userId) {
     return [];
   }
 
@@ -271,65 +271,61 @@ const getUserUploads = async (root, args, context, info) => {
     .collection('uploads')
     .aggregate([
       {
-        $lookup: {
-          from: 'users',
-          localField: 'memberId',
-          foreignField: '_id',
-          as: 'members',
-        },
+        $match: { memberId: new ObjectId(args.userId) },
       },
       {
-        $lookup: {
-          from: 'brands',
-          localField: 'brandId',
-          foreignField: '_id',
-          as: 'brands',
-        },
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'categoryId',
-          foreignField: '_id',
-          as: 'categories',
-        },
-      },
-      {
-        $lookup: {
-          from: 'products',
-          localField: 'productId',
-          foreignField: '_id',
-          as: 'products',
-        },
-      },
-      {
-        $addFields: {
-          brand: { $arrayElemAt: ['$brands', 0] },
-          category: { $arrayElemAt: ['$categories', 0] },
-          product: { $arrayElemAt: ['$products', 0] },
-          member: { $arrayElemAt: ['$members', 0] },
-          earning: { $arrayElemAt: ['$memberEarnings', 0] },
-        },
-      },
-      {
-        $match: {
-          $or: [
-            { memberId: new ObjectId(args.userId) },
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
             {
-              $expr: {
-                $eq: [args.username, '$member.username'],
+              $lookup: {
+                from: 'brands',
+                localField: 'brandId',
+                foreignField: '_id',
+                as: 'brands',
               },
             },
+            {
+              $lookup: {
+                from: 'categories',
+                localField: 'categoryId',
+                foreignField: '_id',
+                as: 'categories',
+              },
+            },
+            {
+              $lookup: {
+                from: 'products',
+                localField: 'productId',
+                foreignField: '_id',
+                as: 'products',
+              },
+            },
+            {
+              $addFields: {
+                brand: { $arrayElemAt: ['$brands', 0] },
+                category: { $arrayElemAt: ['$categories', 0] },
+                product: { $arrayElemAt: ['$products', 0] },
+                earning: { $arrayElemAt: ['$memberEarnings', 0] },
+              },
+            },
+            { $sort: { createdAt: -1 } },
+            { $skip: offset },
+            { $limit: limit },
           ],
         },
       },
-      { $sort: { createdAt: -1 } },
-      { $skip: offset },
-      { $limit: limit },
     ])
     .toArray();
 
-  return uploads;
+  console.log(uploads);
+
+  return {
+    data: uploads[0].data,
+    metadata: {
+      totalCount: uploads[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getApprovedNotCredited = async (root, args, context, info) => {

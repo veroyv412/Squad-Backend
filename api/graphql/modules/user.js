@@ -12,8 +12,8 @@ const typeDefs = gql`
     getUserByFirebaseId(firebaseId: ID!): User
     getLookbookByUserId(userId: ID!, limit: Int, page: Int): [Lookbook!]!
     getLookbook(id: ID!): Lookbook
-    getFollowers(id: ID, limit: Int, page: Int): [User!]!
-    getFollowings(id: ID, limit: Int, page: Int): [User!]!
+    getFollowers(id: ID, limit: Int, page: Int): UsersData!
+    getFollowings(id: ID, limit: Int, page: Int): UsersData!
     isFollowing(userId1: ID, userId2: ID): Boolean!
     getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
     getMyFeedbackOffers(limit: Int, page: Int): [Offer!]!
@@ -45,6 +45,11 @@ const typeDefs = gql`
     phoneNumber: String
     createdAt: Date
     lastActiveAt: Date
+  }
+
+  type UsersData {
+    data: [User!]!
+    metadata: Metadata!
   }
 
   type Lookbook {

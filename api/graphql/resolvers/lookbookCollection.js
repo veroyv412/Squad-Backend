@@ -27,21 +27,34 @@ const getUserLookbookCollections = async (_, args, context) => {
     .db(dbName)
     .collection('lookbook_collections')
     .aggregate([
+      { $match: match },
       {
-        $lookup: {
-          from: 'uploads',
-          localField: 'looks',
-          foreignField: '_id',
-          as: 'looks',
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            {
+              $lookup: {
+                from: 'uploads',
+                localField: 'looks',
+                foreignField: '_id',
+                as: 'looks',
+              },
+            },
+
+            { $skip: offset },
+            { $limit: limit },
+          ],
         },
       },
-      { $match: match },
-      { $skip: offset },
-      { $limit: limit },
     ])
     .toArray();
 
-  return collections;
+  return {
+    data: collections[0].data,
+    metadata: {
+      totalCount: collections[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getLookbookCollection = async (_, args, context) => {

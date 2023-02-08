@@ -213,24 +213,28 @@ const getFollowers = async (root, args, context, info) => {
     .aggregate([
       { $match: { followingId: new ObjectId(args.id) } },
       {
-        $project: { _id: 0 },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'followerId',
-          foreignField: '_id',
-          as: 'user',
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'followerId',
+                foreignField: '_id',
+                as: 'user',
+              },
+            },
+            { $skip: offset },
+            { $limit: limit },
+          ],
         },
       },
-      { $skip: offset },
-      { $limit: limit },
     ])
     .toArray();
 
   const followers = [];
 
-  for (let followerEntry of followersEntries) {
+  for (let followerEntry of followersEntries[0].data) {
     followers.push({
       _id: followerEntry.user[0]._id,
       username: followerEntry.user[0].username,
@@ -239,7 +243,12 @@ const getFollowers = async (root, args, context, info) => {
     });
   }
 
-  return followers;
+  return {
+    data: followers,
+    metadata: {
+      totalCount: followersEntries[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getFollowings = async (root, args, context, info) => {
@@ -255,24 +264,31 @@ const getFollowings = async (root, args, context, info) => {
     .aggregate([
       { $match: { followerId: new ObjectId(args.id) } },
       {
-        $project: { _id: 0 },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'followingId',
-          foreignField: '_id',
-          as: 'user',
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            {
+              $project: { _id: 0 },
+            },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'followingId',
+                foreignField: '_id',
+                as: 'user',
+              },
+            },
+            { $skip: offset },
+            { $limit: limit },
+          ],
         },
       },
-      { $skip: offset },
-      { $limit: limit },
     ])
     .toArray();
 
   const following = [];
 
-  for (let followingEntry of followingEntries) {
+  for (let followingEntry of followingEntries[0].data) {
     following.push({
       _id: followingEntry.user[0]._id,
       username: followingEntry.user[0].username,
@@ -281,7 +297,12 @@ const getFollowings = async (root, args, context, info) => {
     });
   }
 
-  return following;
+  return {
+    data: following,
+    metadata: {
+      totalCount: followingEntries[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getLookbookByUserId = async (root, { userId, limit, page }, context, info) => {

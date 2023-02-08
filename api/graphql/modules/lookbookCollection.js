@@ -5,7 +5,7 @@ const lookbookCollectionResolvers = require('../resolvers/lookbookCollection');
 const typeDefs = gql`
   extend type Query {
     getLookbookCollection(id: ID!): LookbookCollection
-    getUserLookbookCollections(userId: ID!, limit: Int, page: Int): [LookbookCollection!]!
+    getUserLookbookCollections(userId: ID!, limit: Int, page: Int): UserLookbookCollections!
   }
 
   type LookbookCollection {
@@ -14,6 +14,11 @@ const typeDefs = gql`
     private: Boolean!
     title: String!
     looks: [UploadPhoto]!
+  }
+
+  type UserLookbookCollections {
+    data: [LookbookCollection!]!
+    metadata: Metadata!
   }
 
   input LookbookCollectionCreationInput {
