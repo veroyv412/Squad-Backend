@@ -162,8 +162,8 @@ const typeDefs = gql`
     sendPhoneNumberNotificationEmail(id: ID): Boolean
     updateUserStatus(id: ID): Boolean
     deleteProfile(id: ID): Boolean
-    follow(from: ID!, to: ID!): Boolean!
-    unfollow(remove: ID!, from: ID!): Boolean!
+    follow(from: ID!, to: ID!): User!
+    unfollow(remove: ID!, from: ID!): User!
     answerFeedback(data: AnswerFeedbackInput): String
   }
 `;

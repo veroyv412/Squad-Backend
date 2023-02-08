@@ -375,7 +375,7 @@ const getLookbook = async (root, { id }, context, info) => {
   return lookbook;
 };
 
-getMyFeedbackOffers = async (root, args, context, _) => {
+const getMyFeedbackOffers = async (root, args, context, _) => {
   await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
@@ -872,7 +872,10 @@ const follow = async (parent, args, context) => {
       .collection('followers')
       .updateOne(follower, { $setOnInsert: follower }, { upsert: true });
 
-    return true;
+    return dbClient
+      .db(dbName)
+      .collection('users')
+      .findOne({ _id: new ObjectId(args.to) });
   } catch (e) {
     return e;
   }
@@ -890,7 +893,10 @@ const unfollow = async (parent, args, context) => {
         followingId: new ObjectId(args.from),
       });
 
-    return true;
+    return dbClient
+      .db(dbName)
+      .collection('users')
+      .findOne({ _id: new ObjectId(args.remove) });
   } catch (e) {
     return e;
   }
