@@ -21,7 +21,7 @@ const typeDefs = gql`
     getUserAnswer(id: ID): FeedbackAnswer
     getUserTotalLooks(id: ID): Int
     getUserLastUpdatedDate(id: ID): String
-    getReportedLooks(filter: ReportFilterInput, limit: Int, page: Int): Report
+    getReportedLooks(filter: ReportFilterInput, limit: Int, page: Int): ReportMetadata
   }
 
   scalar Date
@@ -42,6 +42,12 @@ const typeDefs = gql`
     deleted: Boolean
     createdAt: Date
     updatedAt: Date
+    look: UploadPhoto
+  }
+  
+  type ReportMetadata {
+    data: [Report!]!
+    metadata: Metadata!
   }
   
   input ReportInput {

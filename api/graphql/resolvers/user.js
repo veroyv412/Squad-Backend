@@ -130,7 +130,6 @@ const getUserTotalLooks = async (root, { id }, context, info) => {
     .collection('uploads')
     .find({ memberId: new ObjectId(id) })
     .count();
-  console.log(count);
   return count;
 };
 
@@ -293,6 +292,71 @@ const getLookbookByUserId = async (root, { userId, limit, page }, context, info)
 
   return lookbook;
 };
+
+const getReportedLooks = async (root, args, context, info) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdmin(context);
+
+  let _limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset - 1) * _limit;
+
+  let match = {};
+  if ( args.filter.lookId ){
+    match.lookId = new ObjectId(args.filter.lookId);
+  }
+
+  if ( args.filter.type ){
+    match.type = args.filter.type;
+  }
+
+  const reports = await dbClient
+      .db(dbName)
+      .collection('looks_report')
+      .aggregate([
+        {
+          $facet: {
+            metadata: [{ $count: 'totalCount' }],
+            data: [
+              { $sort: { createdAt: -1 } },
+              {
+                $lookup: {
+                  from: 'users',
+                  localField: 'userId',
+                  foreignField: '_id',
+                  as: 'users',
+                },
+              },
+              {
+                $lookup: {
+                  from: 'uploads',
+                  localField: 'lookId',
+                  foreignField: '_id',
+                  as: 'looks',
+                },
+              },
+              {
+                $addFields: {
+                  user: { $arrayElemAt: ['$user', 0] },
+                  look: { $arrayElemAt: ['$looks', 0] },
+                },
+              },
+              { $match: match },
+              { $skip: offset },
+              { $limit: _limit },
+            ],
+          },
+
+        }
+      ])
+      .toArray();
+
+  return {
+    data: reports[0].data,
+    metadata: {
+      totalCount: reports[0].metadata[0].totalCount,
+    },
+  };
+}
 
 const getLookbook = async (root, { id }, context, info) => {
   const lookbook = await dbClient
@@ -969,6 +1033,7 @@ module.exports = {
     isFollowing,
     getUserTotalLooks,
     getUserLastUpdatedDate,
+    getReportedLooks
   },
   mutations: {
     updateUser,
