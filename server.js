@@ -34,6 +34,7 @@ const startServer = async () => {
           'http://localhost:3000',
           'https://squad-demos.netlify.app',
           'https://thelookbook.io',
+          'https://thelookbook-dev.netlify.app',
         ];
         if (whitelist.indexOf(origin) !== -1 || !origin) {
           callback(null, true);
