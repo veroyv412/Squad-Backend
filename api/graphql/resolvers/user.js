@@ -278,8 +278,6 @@ const getFollowings = async (root, args, context, info) => {
                 as: 'user',
               },
             },
-            { $skip: offset },
-            { $limit: limit },
           ],
         },
       },
@@ -297,12 +295,7 @@ const getFollowings = async (root, args, context, info) => {
     });
   }
 
-  return {
-    data: following,
-    metadata: {
-      totalCount: followingEntries[0].metadata[0].totalCount,
-    },
-  };
+  return following;
 };
 
 const getLookbookByUserId = async (root, { userId, limit, page }, context, info) => {
@@ -896,7 +889,7 @@ const unfollow = async (parent, args, context) => {
     return dbClient
       .db(dbName)
       .collection('users')
-      .findOne({ _id: new ObjectId(args.remove) });
+      .findOne({ _id: new ObjectId(args.from) });
   } catch (e) {
     return e;
   }

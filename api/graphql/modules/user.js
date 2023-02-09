@@ -13,7 +13,7 @@ const typeDefs = gql`
     getLookbookByUserId(userId: ID!, limit: Int, page: Int): [Lookbook!]!
     getLookbook(id: ID!): Lookbook
     getFollowers(id: ID, limit: Int, page: Int): UsersData!
-    getFollowings(id: ID, limit: Int, page: Int): UsersData!
+    getFollowings(id: ID, limit: Int, page: Int): [User!]!
     isFollowing(userId1: ID, userId2: ID): Boolean!
     getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
     getMyFeedbackOffers(limit: Int, page: Int): [Offer!]!

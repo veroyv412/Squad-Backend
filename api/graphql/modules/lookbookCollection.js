@@ -5,7 +5,7 @@ const lookbookCollectionResolvers = require('../resolvers/lookbookCollection');
 const typeDefs = gql`
   extend type Query {
     getLookbookCollection(id: ID!): LookbookCollection
-    getUserLookbookCollections(userId: ID!, limit: Int, page: Int): UserLookbookCollections!
+    getUserLookbookCollections(userId: ID!): UserLookbookCollections!
   }
 
   type LookbookCollection {
