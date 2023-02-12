@@ -12,9 +12,9 @@ const typeDefs = gql`
     getUserByFirebaseId(firebaseId: ID!): User
     getLookbookByUserId(userId: ID!, limit: Int, page: Int): [Lookbook!]!
     getLookbook(id: ID!): Lookbook
-    getFollowers(id: ID, limit: Int, page: Int): [Follower]
-    getFollowings(id: ID, limit: Int, page: Int): [Follower]
-    isFollowing(userId1: ID, userId2: ID): Boolean
+    getFollowers(id: ID, limit: Int, page: Int): UsersData!
+    getFollowings(id: ID, limit: Int, page: Int): [User!]!
+    isFollowing(userId1: ID, userId2: ID): Boolean!
     getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
     getMyFeedbackOffers(limit: Int, page: Int): [Offer!]!
     getUserCompletedAnswers(id: ID, limit: Int, page: Int): [FeedbackAnswer]
@@ -66,7 +66,7 @@ const typeDefs = gql`
     _id: ID!
     displayName: String!
     username: String
-    email: String!
+    email: String
     hasUploads: Boolean
     pictureUrl: String
     currentBalance: Float
@@ -84,12 +84,9 @@ const typeDefs = gql`
     lastActiveAt: Date
   }
 
-  type Follower {
-    _id: ID
-    userId1: ID
-    userId2: ID
-    user1: User
-    user2: User
+  type UsersData {
+    data: [User!]!
+    metadata: Metadata!
   }
 
   type Lookbook {
@@ -202,8 +199,8 @@ const typeDefs = gql`
     sendPhoneNumberNotificationEmail(id: ID): Boolean
     updateUserStatus(id: ID): Boolean
     deleteProfile(id: ID): Boolean
-    follow(userId1: ID, userId2: ID): String
-    unfollow(userId1: ID, userId2: ID): String
+    follow(from: ID!, to: ID!): User!
+    unfollow(remove: ID!, from: ID!): User!
     answerFeedback(data: AnswerFeedbackInput): String
     reportLook(data: ReportInput!): String
     deleteReport(id: ID!): Boolean

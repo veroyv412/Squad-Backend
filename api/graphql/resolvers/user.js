@@ -1,4 +1,6 @@
 const { dbClient, dbName } = require('../../config/mongo');
+const { RealmApiClient } = require('../../utils/Realm');
+const realmApi = new RealmApiClient();
 const ObjectId = require('mongodb').ObjectId;
 const sgMail = require('@sendgrid/mail');
 const jwt = require('jsonwebtoken');
@@ -18,14 +20,56 @@ const users = async (root, args, context, info) => {
 };
 
 const user = async (root, { id }, context, info) => {
+  if (!context.req.cookies.access_token) {
+    throw new AuthenticationError();
+  }
+
+  await realmApi.isAccessTokenValid(context.req.cookies.access_token);
+
+  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+  const reqDbUser = await dbClient.db(dbName).collection('users').findOne({ stitchId: reqUserId });
+  if (!reqDbUser) {
+    throw new Error('User not found');
+  }
+
+  const isSameProfile = reqDbUser._id.toString() === id;
+  const isAdmin = reqDbUser?.role === 'admin';
+
   const usersRef = dbClient.db(dbName).collection('users');
 
   const user = await usersRef.findOne({ _id: new ObjectId(id) });
 
-  return user;
+  if (!user) throw new Error('User does not exist');
+
+  if (isSameProfile || isAdmin) {
+    return user;
+  } else {
+    return {
+      _id: user._id,
+      displayName: user.displayName,
+      username: user.username,
+      pictureUrl: user.pictureUrl,
+    };
+  }
 };
 
 const userBy = async (root, { data }, context, info) => {
+  if (!context.req.cookies.access_token) {
+    throw new AuthenticationError();
+  }
+
+  await realmApi.isAccessTokenValid(context.req.cookies.access_token);
+
+  const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+  const reqDbUser = await dbClient.db(dbName).collection('users').findOne({ stitchId: reqUserId });
+  if (!reqDbUser) {
+    throw new Error('User not found');
+  }
+
+  const isSameProfile =
+    reqDbUser.username.toString() === data || reqDbUser.email.toString() === data;
+  const isAdmin = reqDbUser?.role === 'admin';
+
   const usersRef = dbClient.db(dbName).collection('users');
   let or = {
     $or: [{ username: data }, { email: data }],
@@ -33,14 +77,21 @@ const userBy = async (root, { data }, context, info) => {
 
   const user = await usersRef.findOne(or);
 
-  return user;
+  if (!user) throw new Error('User does not exist');
+
+  if (isSameProfile || isAdmin) {
+    return user;
+  } else {
+    return {
+      _id: user._id,
+      displayName: user.displayName,
+      username: user.username,
+      pictureUrl: user.pictureUrl,
+    };
+  }
 };
 
 const me = async (root, args, context, info) => {
-  if (!context.req.cookies.access_token) {
-    throw new AuthenticationError();
-  }
-
   await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
@@ -149,87 +200,101 @@ const getUserLastUpdatedDate = async (root, { id }, context, info) => {
 };
 
 const getFollowers = async (root, args, context, info) => {
-  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+  await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   let limit = args.limit || 10;
   let offset = args.page || 1;
   offset = (offset - 1) * limit;
 
-  const followers = await dbClient
+  const followersEntries = await dbClient
     .db(dbName)
     .collection('followers')
     .aggregate([
+      { $match: { followingId: new ObjectId(args.id) } },
       {
-        $lookup: {
-          from: 'users',
-          localField: 'userId1',
-          foreignField: '_id',
-          as: 'user1',
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'followerId',
+                foreignField: '_id',
+                as: 'user',
+              },
+            },
+            { $skip: offset },
+            { $limit: limit },
+          ],
         },
       },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId2',
-          foreignField: '_id',
-          as: 'user2',
-        },
-      },
-      { $match: { userId2: new ObjectId(args.id) } },
-      { $sort: { createdAt: -1 } },
-      { $skip: offset },
-      { $limit: limit }
     ])
     .toArray();
 
-  for (let follower of followers) {
-    follower.user1 = follower.user1[0];
-    follower.user2 = follower.user2[0];
+  const followers = [];
+
+  for (let followerEntry of followersEntries[0].data) {
+    followers.push({
+      _id: followerEntry.user[0]._id,
+      username: followerEntry.user[0].username,
+      displayName: followerEntry.user[0].displayName,
+      pictureUrl: followerEntry.user[0].pictureUrl,
+    });
   }
 
-  return followers;
+  return {
+    data: followers,
+    metadata: {
+      totalCount: followersEntries[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getFollowings = async (root, args, context, info) => {
-  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+  await authenticationResolvers.helper.assertIsLoggedIn(context, args.id);
 
   let limit = args.limit || 10;
   let offset = args.page || 1;
   offset = (offset - 1) * limit;
 
-  const followers = await dbClient
+  const followingEntries = await dbClient
     .db(dbName)
     .collection('followers')
     .aggregate([
+      { $match: { followerId: new ObjectId(args.id) } },
       {
-        $lookup: {
-          from: 'users',
-          localField: 'userId1',
-          foreignField: '_id',
-          as: 'user1',
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            {
+              $project: { _id: 0 },
+            },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'followingId',
+                foreignField: '_id',
+                as: 'user',
+              },
+            },
+          ],
         },
       },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId2',
-          foreignField: '_id',
-          as: 'user2',
-        },
-      },
-      { $match: { userId1: new ObjectId(args.id) } },
-      { $sort: { createdAt: -1 } },
-      { $skip: offset },
-      { $limit: limit }
     ])
     .toArray();
 
-  for (let follower of followers) {
-    follower.user1 = follower.user1[0];
-    follower.user2 = follower.user2[0];
+  const following = [];
+
+  for (let followingEntry of followingEntries[0].data) {
+    following.push({
+      _id: followingEntry.user[0]._id,
+      username: followingEntry.user[0].username,
+      displayName: followingEntry.user[0].displayName,
+      pictureUrl: followingEntry.user[0].pictureUrl,
+    });
   }
 
-  return followers;
+  return following;
 };
 
 const getLookbookByUserId = async (root, { userId, limit, page }, context, info) => {
@@ -367,7 +432,7 @@ const getLookbook = async (root, { id }, context, info) => {
   return lookbook;
 };
 
-getMyFeedbackOffers = async (root, args, context, _) => {
+const getMyFeedbackOffers = async (root, args, context, _) => {
   await authenticationResolvers.helper.assertIsLoggedIn(context);
 
   const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
@@ -850,39 +915,46 @@ const sendAfterConfirmationEmail = async (parent, args) => {
   return true;
 };
 
-const follow = async (parent, args) => {
+const follow = async (parent, args, context) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.from);
+
   try {
-    let follower = {
-      userId1: new ObjectId(args.userId1),
-      userId2: new ObjectId(args.userId2),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const follower = {
+      followerId: new ObjectId(args.from),
+      followingId: new ObjectId(args.to),
     };
 
-    follower = await dbClient.db(dbName).collection('followers').insertOne(follower);
+    await dbClient
+      .db(dbName)
+      .collection('followers')
+      .updateOne(follower, { $setOnInsert: follower }, { upsert: true });
 
-    await notificationResolvers.helper.createFollowNotificationToMember(args.userId1, args.userId2);
-
-    return follower.insertedId.toString();
+    return dbClient
+      .db(dbName)
+      .collection('users')
+      .findOne({ _id: new ObjectId(args.to) });
   } catch (e) {
-    console.log(e);
     return e;
   }
 };
 
-const unfollow = async (parent, args) => {
+const unfollow = async (parent, args, context) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.remove);
+
   try {
-    const response = await dbClient
+    await dbClient
       .db(dbName)
       .collection('followers')
       .deleteOne({
-        userId1: new ObjectId(args.userId1),
-        userId2: new ObjectId(args.userId2),
+        followerId: new ObjectId(args.remove),
+        followingId: new ObjectId(args.from),
       });
 
-    return args.userId1;
+    return dbClient
+      .db(dbName)
+      .collection('users')
+      .findOne({ _id: new ObjectId(args.from) });
   } catch (e) {
-    console.log(e);
     return e;
   }
 };

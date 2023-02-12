@@ -9,10 +9,6 @@ const { ForbiddenError } = require('apollo-server-express');
 const getUserLookbookCollections = async (_, args, context) => {
   await authenticationResolvers.helper.assertIsLoggedIn(context);
 
-  let limit = args.limit || 10;
-  let offset = args.page || 1;
-  offset = (offset - 1) * limit;
-
   const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
   const reqDbUser = await dbClient.db(dbName).collection('users').findOne({ stitchId: reqUserId });
 
@@ -27,21 +23,31 @@ const getUserLookbookCollections = async (_, args, context) => {
     .db(dbName)
     .collection('lookbook_collections')
     .aggregate([
+      { $match: match },
       {
-        $lookup: {
-          from: 'uploads',
-          localField: 'looks',
-          foreignField: '_id',
-          as: 'looks',
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            {
+              $lookup: {
+                from: 'uploads',
+                localField: 'looks',
+                foreignField: '_id',
+                as: 'looks',
+              },
+            },
+          ],
         },
       },
-      { $match: match },
-      { $skip: offset },
-      { $limit: limit },
     ])
     .toArray();
 
-  return collections;
+  return {
+    data: collections[0].data,
+    metadata: {
+      totalCount: collections[0]?.metadata[0]?.totalCount ?? 0,
+    },
+  };
 };
 
 const getLookbookCollection = async (_, args, context) => {
