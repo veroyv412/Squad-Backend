@@ -16,7 +16,8 @@ const typeDefs = gql`
     getFollowings(id: ID, limit: Int, page: Int): [User!]!
     isFollowing(userId1: ID, userId2: ID): Boolean!
     getUserFeedbacks(id: ID, limit: Int, page: Int): [CustomerFeedback!]!
-    getMyFeedbackOffers(limit: Int, page: Int): [Offer!]!
+    getMyFeedbackOffers(limit: Int, page: Int): OffersData!
+    getUserHistory(id: ID!, limit: Int, page: Int): HistoryData!
     getUserCompletedAnswers(id: ID, limit: Int, page: Int): [FeedbackAnswer]
     getUserAnswer(id: ID): FeedbackAnswer
     getUserTotalLooks(id: ID): Int
@@ -32,31 +33,31 @@ const typeDefs = gql`
     SPAM
     OTHER
   }
-  
+
   type Report {
     _id: ID
-    userId: ID!,
-    lookId: ID!,
-    description: String,
+    userId: ID!
+    lookId: ID!
+    description: String
     type: ReportType!
     deleted: Boolean
     createdAt: Date
     updatedAt: Date
     look: UploadPhoto
   }
-  
+
   type ReportMetadata {
     data: [Report!]!
     metadata: Metadata!
   }
-  
+
   input ReportInput {
     userId: ID!
     lookId: ID!
     description: String
     type: ReportType!
   }
-  
+
   input ReportFilterInput {
     lookId: ID
     type: ReportType
@@ -101,6 +102,47 @@ const typeDefs = gql`
     categories: [String]
     products: [String]
     uploads: [UploadPhoto]
+  }
+
+  type HistoryData {
+    data: [HistoryEntry!]!
+    metadata: Metadata!
+  }
+
+  union HistoryEntry = OfferHistoryElement | CashoutHistoryElement | UploadHistoryElement
+
+  type OfferHistoryElement {
+    _id: ID!
+    actionType: HistoryActionType
+    offer: Offer
+    date: Date
+  }
+
+  type CashoutHistoryElement {
+    _id: ID!
+    actionType: HistoryActionType
+    userId: ID!
+    amount: Float
+    date: Date
+  }
+
+  type UploadHistoryElement {
+    _id: ID!
+    actionType: HistoryActionType
+    userId: ID!
+    amount: Float
+    date: Date
+  }
+
+  enum HistoryActionType {
+    OFFER_COMPLETED
+    LOOK_UPLOADED
+    CASHED_OUT
+  }
+
+  type OffersData {
+    data: [Offer!]!
+    metadata: Metadata!
   }
 
   type Offer {
@@ -211,7 +253,6 @@ const resolvers = {
   Query: {
     ...userResolvers.queries,
   },
-
   Mutation: {
     ...userResolvers.mutations,
   },
