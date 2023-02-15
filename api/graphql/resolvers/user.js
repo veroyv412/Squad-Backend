@@ -451,57 +451,72 @@ const getMyFeedbackOffers = async (root, args, context, _) => {
     .aggregate([
       { $match: { $and: [{ memberId: new ObjectId(user._id) }, { active: true }] } },
       {
-        $lookup: {
-          from: 'uploads',
-          let: { lookId: '$lookId' },
-          pipeline: [
-            { $match: { $expr: { $eq: ['$_id', '$$lookId'] } } },
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
             {
               $lookup: {
-                from: 'brands',
-                let: { brandId: '$brandId' },
-                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$brandId'] } } }],
-                as: 'brand',
-              },
-            },
-            {
-              $lookup: {
-                from: 'categories',
-                let: { categoryId: '$categoryId' },
-                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$categoryId'] } } }],
-                as: 'category',
-              },
-            },
-            {
-              $lookup: {
-                from: 'products',
-                let: { productId: '$productId' },
-                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$productId'] } } }],
-                as: 'product',
+                from: 'uploads',
+                let: { lookId: '$lookId' },
+                pipeline: [
+                  { $match: { $expr: { $eq: ['$_id', '$$lookId'] } } },
+                  {
+                    $lookup: {
+                      from: 'brands',
+                      let: { brandId: '$brandId' },
+                      pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$brandId'] } } }],
+                      as: 'brand',
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: 'categories',
+                      let: { categoryId: '$categoryId' },
+                      pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$categoryId'] } } }],
+                      as: 'category',
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: 'products',
+                      let: { productId: '$productId' },
+                      pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$productId'] } } }],
+                      as: 'product',
+                    },
+                  },
+                  {
+                    $addFields: {
+                      brand: { $arrayElemAt: ['$brand', 0] },
+                      category: { $arrayElemAt: ['$category', 0] },
+                      product: { $arrayElemAt: ['$product', 0] },
+                    },
+                  },
+                ],
+                as: 'look',
               },
             },
             {
               $addFields: {
-                brand: { $arrayElemAt: ['$brand', 0] },
-                category: { $arrayElemAt: ['$category', 0] },
-                product: { $arrayElemAt: ['$product', 0] },
+                look: { $arrayElemAt: ['$look', 0] },
               },
             },
+            { $sort: { createdAt: -1 } },
+            { $skip: offset },
+            { $limit: limit },
           ],
-          as: 'look',
         },
       },
-      {
-        $addFields: {
-          look: { $arrayElemAt: ['$look', 0] },
-        },
-      },
-      { $skip: offset },
-      { $limit: limit },
     ])
     .toArray();
 
-  return userOffers.map((offer) => ({ ...offer, questions }));
+  const offers = userOffers[0].data.map((offer) => ({ ...offer, questions }));
+
+  return {
+    data: offers,
+    metadata: {
+      totalCount: userOffers[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getUserFeedbacks = async (root, args, context, info) => {
@@ -1189,6 +1204,7 @@ module.exports = {
     getMyFeedbackOffers,
     getSpotlightMembers,
     getUserFeedbacks,
+    getUserHistory,
     getUserCompletedAnswers,
     getUserAnswer,
     getLookbook,
