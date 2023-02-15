@@ -236,10 +236,9 @@ const typeDefs = gql`
     updateUser(id: ID, user: UserInput): User!
     lookbookit(data: LookbookInput): String
     unlookbookit(id: ID): String
-    sendConfirmationEmail(id: ID): Boolean
-    sendAfterConfirmationEmail(id: ID): Boolean
     sendPhoneNumberNotificationEmail(id: ID): Boolean
-    updateUserStatus(id: ID): Boolean
+    sendVerificationEmail(email: String!): Boolean
+    confirmUser(token: String!): Boolean
     deleteProfile(id: ID): Boolean
     follow(from: ID!, to: ID!): User!
     unfollow(remove: ID!, from: ID!): User!

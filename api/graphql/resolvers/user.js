@@ -889,13 +889,19 @@ const unlookbookit = async (parent, args) => {
   }
 };
 
-const updateUserStatus = async (parent, args) => {
+const confirmUser = async (root, args, context) => {
+  let user;
   try {
+    const reqUserId = jwt.verify(args.token, process.env.JWT_SECRET);
+
+    const usersRef = dbClient.db(dbName).collection('users');
+    user = await usersRef.findOne({ stitchId: reqUserId?.id });
+
     await dbClient
       .db(dbName)
       .collection('users')
       .updateOne(
-        { $or: [{ stitchId: args.id }, { email: args.id }] },
+        { stitchId: reqUserId?.id },
         {
           $set: { status: 'confirmed' },
           $currentDate: { updatedAt: true },
@@ -904,6 +910,8 @@ const updateUserStatus = async (parent, args) => {
   } catch (e) {
     return e;
   }
+
+  authenticationResolvers.helper.sendWelcomeEmail(user.email);
 
   return true;
 };
@@ -927,38 +935,11 @@ const deleteProfile = async (parent, args) => {
   return true;
 };
 
-const sendConfirmationEmail = async (parent, args) => {
-  try {
-    let user = await dbClient
-      .db(dbName)
-      .collection('users')
-      .findOne({ $or: [{ stitchId: args.id }, { email: args.id }] });
-    console.log(user);
-    let token = jwt.sign({ id: args.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+const sendVerificationEmail = async (parent, args) => {
+  const usersRef = dbClient.db(dbName).collection('users');
+  const user = await usersRef.findOne({ email: args.email });
 
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const msg = {
-      to: user.email,
-      from: {
-        name: 'The Lookbook Team',
-        email: 'fred@teammysquad.com',
-      },
-      templateId: 'd-b4712b8325e74eab98976c4ba0bcd5b9',
-      dynamic_template_data: {
-        link: process.env.FRONTEND_URL + `confirm-email/${token}`,
-        name: user.displayName,
-      },
-    };
-
-    console.log(msg);
-
-    await sgMail.send(msg);
-  } catch (e) {
-    console.log(e);
-    return e;
-  }
-
-  return true;
+  authenticationResolvers.helper.sendConfirmationEmail(user.stitchId, args.email);
 };
 
 const sendPhoneNumberNotificationEmail = async (parent, args) => {
@@ -978,38 +959,6 @@ const sendPhoneNumberNotificationEmail = async (parent, args) => {
       templateId: 'd-771f94f5f263425eb20ed3550bef2908',
       dynamic_template_data: {
         add_phone_number_link: process.env.FRONTEND_URL + `member/profile`,
-      },
-    };
-
-    console.log(msg);
-
-    await sgMail.send(msg);
-  } catch (e) {
-    console.log(e);
-    return e;
-  }
-
-  return true;
-};
-
-const sendAfterConfirmationEmail = async (parent, args) => {
-  try {
-    let user = await dbClient
-      .db(dbName)
-      .collection('users')
-      .findOne({ $or: [{ stitchId: args.id }, { email: args.id }] });
-    console.log(user);
-
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const msg = {
-      to: user.email,
-      from: {
-        name: 'The Lookbook Team',
-        email: 'fred@teammysquad.com',
-      },
-      templateId: 'd-eb1d7a9768084517946234c5fa2e2583',
-      dynamic_template_data: {
-        name: user.displayName,
       },
     };
 
@@ -1222,10 +1171,9 @@ module.exports = {
     updateUser,
     lookbookit,
     unlookbookit,
-    updateUserStatus,
+    confirmUser,
     deleteProfile,
-    sendConfirmationEmail,
-    sendAfterConfirmationEmail,
+    sendVerificationEmail,
     sendPhoneNumberNotificationEmail,
     follow,
     unfollow,

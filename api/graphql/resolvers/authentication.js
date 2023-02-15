@@ -138,26 +138,7 @@ const registerUser = async (_, args, context) => {
 
     await dbClient.db(dbName).collection('users').insertOne(user);
 
-    let token = jwt.sign({ id: realmUser.id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
-
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-    const msg = {
-      to: user.email,
-      from: {
-        name: 'The Lookbook Team',
-        email: 'fred@teammysquad.com',
-      },
-      templateId: 'd-b4712b8325e74eab98976c4ba0bcd5b9',
-      dynamic_template_data: {
-        link: process.env.FRONTEND_URL + `confirm-email/${token}`,
-        name: user.displayName,
-      },
-    };
-
-    await sgMail.send(msg);
+    sendConfirmationEmail(realmUser.id, user.email);
 
     return true;
   } catch (e) {
@@ -245,6 +226,54 @@ const assertIsLoggedInAsAdmin = async (context) => {
   }
 };
 
+const sendConfirmationEmail = async (userId, email) => {
+  try {
+    let token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    const msg = {
+      to: email,
+      from: {
+        name: 'The Lookbook Team',
+        email: 'fred@teammysquad.com',
+      },
+      templateId: 'd-b4712b8325e74eab98976c4ba0bcd5b9',
+      dynamic_template_data: {
+        link: encodeURI(
+          process.env.FRONTEND_URL + `confirm-email/${token}?email=${encodeURIComponent(email)}`
+        ),
+      },
+    };
+
+    await sgMail.send(msg);
+  } catch (e) {
+    console.log(e);
+    return e;
+  }
+
+  return true;
+};
+
+const sendWelcomeEmail = async (email) => {
+  try {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    const msg = {
+      to: email,
+      from: {
+        name: 'The Lookbook Team',
+        email: 'fred@teammysquad.com',
+      },
+      templateId: 'd-eb1d7a9768084517946234c5fa2e2583',
+    };
+
+    await sgMail.send(msg);
+  } catch (e) {
+    return e;
+  }
+
+  return true;
+};
+
 module.exports = {
   queries: {
     getTokenByEmailAndPassword,
@@ -258,5 +287,7 @@ module.exports = {
     assertIsLoggedIn,
     assertIsLoggedInAsAdmin,
     assertIsLoggedInAsAdminOrProfileId,
+    sendConfirmationEmail,
+    sendWelcomeEmail,
   },
 };
