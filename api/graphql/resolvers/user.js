@@ -366,54 +366,53 @@ const getReportedLooks = async (root, args, context, info) => {
   offset = (offset - 1) * _limit;
 
   let match = {};
-  if ( args.filter.lookId ){
+  if (args.filter.lookId) {
     match.lookId = new ObjectId(args.filter.lookId);
   }
 
-  if ( args.filter.type ){
+  if (args.filter.type) {
     match.type = args.filter.type;
   }
 
   const reports = await dbClient
-      .db(dbName)
-      .collection('looks_report')
-      .aggregate([
-        {
-          $facet: {
-            metadata: [{ $count: 'totalCount' }],
-            data: [
-              { $sort: { createdAt: -1 } },
-              {
-                $lookup: {
-                  from: 'users',
-                  localField: 'userId',
-                  foreignField: '_id',
-                  as: 'users',
-                },
+    .db(dbName)
+    .collection('looks_report')
+    .aggregate([
+      {
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            { $sort: { createdAt: -1 } },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'users',
               },
-              {
-                $lookup: {
-                  from: 'uploads',
-                  localField: 'lookId',
-                  foreignField: '_id',
-                  as: 'looks',
-                },
+            },
+            {
+              $lookup: {
+                from: 'uploads',
+                localField: 'lookId',
+                foreignField: '_id',
+                as: 'looks',
               },
-              {
-                $addFields: {
-                  user: { $arrayElemAt: ['$user', 0] },
-                  look: { $arrayElemAt: ['$looks', 0] },
-                },
+            },
+            {
+              $addFields: {
+                user: { $arrayElemAt: ['$user', 0] },
+                look: { $arrayElemAt: ['$looks', 0] },
               },
-              { $match: match },
-              { $skip: offset },
-              { $limit: _limit },
-            ],
-          },
-
-        }
-      ])
-      .toArray();
+            },
+            { $match: match },
+            { $skip: offset },
+            { $limit: _limit },
+          ],
+        },
+      },
+    ])
+    .toArray();
 
   return {
     data: reports[0].data,
@@ -421,7 +420,7 @@ const getReportedLooks = async (root, args, context, info) => {
       totalCount: reports[0].metadata[0].totalCount,
     },
   };
-}
+};
 
 const getLookbook = async (root, { id }, context, info) => {
   const lookbook = await dbClient
@@ -582,6 +581,99 @@ const getUserFeedbacks = async (root, args, context, info) => {
     .toArray();
 
   return [...customerFeedbacksUploads];
+};
+
+const getUserHistory = async (root, args, context) => {
+  await authenticationResolvers.helper.assertIsLoggedInAsAdminOrProfileId(context, args.id);
+
+  let limit = args.limit || 10;
+  let offset = args.page || 1;
+  offset = (offset - 1) * limit;
+
+  let userHistory = await dbClient
+    .db(dbName)
+    .collection('earnings_history')
+    .aggregate([
+      { $match: { userId: new ObjectId(args.id) } },
+      {
+        $facet: {
+          metadata: [{ $count: 'totalCount' }],
+          data: [
+            {
+              $lookup: {
+                from: 'feedback_offers',
+                let: { offerId: '$offerId' },
+                pipeline: [
+                  { $match: { $expr: { $eq: ['$_id', '$$offerId'] } } },
+                  {
+                    $lookup: {
+                      from: 'uploads',
+                      let: { lookId: '$lookId' },
+                      pipeline: [
+                        { $match: { $expr: { $eq: ['$_id', '$$lookId'] } } },
+                        {
+                          $lookup: {
+                            from: 'brands',
+                            localField: 'brandId',
+                            foreignField: '_id',
+                            as: 'brand',
+                          },
+                        },
+                        {
+                          $addFields: {
+                            brand: { $arrayElemAt: ['$brand', 0] },
+                          },
+                        },
+                      ],
+                      as: 'look',
+                    },
+                  },
+                  {
+                    $addFields: {
+                      look: { $arrayElemAt: ['$look', 0] },
+                    },
+                  },
+                ],
+                as: 'offer',
+              },
+            },
+            {
+              $addFields: {
+                offer: { $arrayElemAt: ['$offer', 0] },
+                date: { $ifNull: [{ $arrayElemAt: ['$offer.updatedAt', 0] }, '$date'] },
+              },
+            },
+            { $sort: { date: -1 } },
+            { $skip: offset },
+            { $limit: limit },
+          ],
+        },
+      },
+    ])
+    .toArray();
+
+  for (let historyElement of userHistory[0].data) {
+    switch (historyElement.actionType) {
+      case 'OFFER_COMPLETED':
+        historyElement.__typename = 'OfferHistoryElement';
+        break;
+      case 'CASHED_OUT':
+        historyElement.__typename = 'CashoutHistoryElement';
+        break;
+      case 'LOOK_UPLOADED':
+        historyElement.__typename = 'UploadHistoryElement';
+        break;
+      default:
+        break;
+    }
+  }
+
+  return {
+    data: userHistory[0].data,
+    metadata: {
+      totalCount: userHistory[0].metadata[0].totalCount,
+    },
+  };
 };
 
 const getUserCompletedAnswers = async (root, args, context, info) => {
@@ -1077,9 +1169,10 @@ const deleteReport = async (parent, args, context) => {
   try {
     await authenticationResolvers.helper.assertIsLoggedIn(context);
 
-    await dbClient.db(dbName)
-        .collection('looks_report')
-        .updateOne({ _id: new ObjectId(args.id) }, { $set: { deleted: true } });
+    await dbClient
+      .db(dbName)
+      .collection('looks_report')
+      .updateOne({ _id: new ObjectId(args.id) }, { $set: { deleted: true } });
 
     return true;
   } catch (e) {
@@ -1105,7 +1198,7 @@ module.exports = {
     isFollowing,
     getUserTotalLooks,
     getUserLastUpdatedDate,
-    getReportedLooks
+    getReportedLooks,
   },
   mutations: {
     updateUser,
