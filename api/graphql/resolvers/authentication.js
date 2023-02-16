@@ -228,7 +228,9 @@ const assertIsLoggedInAsAdmin = async (context) => {
 
 const sendConfirmationEmail = async (userId, email) => {
   try {
-    let token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    let token = jwt.sign({ id: userId, email: email }, process.env.JWT_SECRET, {
+      expiresIn: '24h',
+    });
 
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     const msg = {
@@ -239,9 +241,7 @@ const sendConfirmationEmail = async (userId, email) => {
       },
       templateId: 'd-b4712b8325e74eab98976c4ba0bcd5b9',
       dynamic_template_data: {
-        link: encodeURI(
-          process.env.FRONTEND_URL + `confirm-email/${token}?email=${encodeURIComponent(email)}`
-        ),
+        link: encodeURI(process.env.FRONTEND_URL + `confirm-email/${token}`),
       },
     };
 
