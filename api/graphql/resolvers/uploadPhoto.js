@@ -22,12 +22,12 @@ const getUploadedPhotos = async (root, args, context, info) => {
   let offset = args.page || 1;
   offset = (offset - 1) * limit;
 
-  const filter = args.filter;
+  const filter = args?.filter;
 
   let match = {};
   let followingUsersIds = [];
 
-  if (filter.followingOnly) {
+  if (filter && filter.followingOnly) {
     const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
     const usersRef = dbClient.db(dbName).collection('users');
     const user = await usersRef.findOne({ stitchId: reqUserId });
