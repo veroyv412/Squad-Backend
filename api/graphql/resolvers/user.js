@@ -667,8 +667,6 @@ const getUserHistory = async (root, args, context) => {
     ])
     .toArray();
 
-  console.log(userHistory[0].data);
-
   for (let historyElement of userHistory[0].data) {
     switch (historyElement.actionType) {
       case 'OFFER_COMPLETED':

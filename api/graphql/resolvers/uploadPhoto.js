@@ -7,6 +7,7 @@ const authenticationResolvers = require('../resolvers/authentication');
 
 const _ = require('lodash');
 const { union } = require('lodash');
+const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const dotenv = require('dotenv');
 
@@ -21,10 +22,38 @@ const getUploadedPhotos = async (root, args, context, info) => {
   let offset = args.page || 1;
   offset = (offset - 1) * limit;
 
+  const filter = args?.filter;
+
+  let match = {};
+  let followingUsersIds = [];
+
+  if (filter && filter.followingOnly) {
+    const reqUserId = jwt.decode(context.req.cookies.access_token)?.sub;
+    const usersRef = dbClient.db(dbName).collection('users');
+    const user = await usersRef.findOne({ stitchId: reqUserId });
+
+    const userFollowingList = await dbClient
+      .db(dbName)
+      .collection('followers')
+      .aggregate([
+        { $match: { followerId: user._id } },
+        {
+          $project: { _id: 0, followerId: 0 },
+        },
+      ])
+      .toArray();
+
+    followingUsersIds = userFollowingList.map((following) => following.followingId);
+    match = { memberId: { $in: followingUsersIds } };
+  }
+
   const uploads = await dbClient
     .db(dbName)
     .collection('uploads')
     .aggregate([
+      {
+        $match: match,
+      },
       {
         $facet: {
           metadata: [{ $count: 'totalCount' }],
