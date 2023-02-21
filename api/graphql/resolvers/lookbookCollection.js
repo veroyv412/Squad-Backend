@@ -31,8 +31,58 @@ const getUserLookbookCollections = async (_, args, context) => {
             {
               $lookup: {
                 from: 'uploads',
-                localField: 'looks',
-                foreignField: '_id',
+                let: { looks: '$looks' },
+                pipeline: [
+                  {
+                    $match: { $expr: { $in: ['$_id', '$$looks'] } },
+                  },
+                  {
+                    $lookup: {
+                      from: 'brands',
+                      let: { brandId: '$brandId' },
+                      pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$brandId'] } } }],
+                      as: 'brand',
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: 'categories',
+                      let: { categoryId: '$categoryId' },
+                      pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$categoryId'] } } }],
+                      as: 'category',
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: 'products',
+                      let: { productId: '$productId' },
+                      pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$productId'] } } }],
+                      as: 'product',
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: 'users',
+                      let: { memberId: '$memberId' },
+                      pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$memberId'] } } }],
+                      as: 'member',
+                    },
+                  },
+                  {
+                    $project: {
+                      'member.email': 0,
+                      'member.currentBalance': 0,
+                    },
+                  },
+                  {
+                    $addFields: {
+                      brand: { $arrayElemAt: ['$brand', 0] },
+                      category: { $arrayElemAt: ['$category', 0] },
+                      product: { $arrayElemAt: ['$product', 0] },
+                      member: { $arrayElemAt: ['$member', 0] },
+                    },
+                  },
+                ],
                 as: 'looks',
               },
             },
@@ -42,8 +92,16 @@ const getUserLookbookCollections = async (_, args, context) => {
     ])
     .toArray();
 
+  const userCollections = collections[0].data.map((collection) => ({
+    ...collection,
+    owner: {
+      _id: reqDbUser._id,
+      username: reqDbUser.username,
+    },
+  }));
+
   return {
-    data: collections[0].data,
+    data: userCollections,
     metadata: {
       totalCount: collections[0]?.metadata[0]?.totalCount ?? 0,
     },
@@ -63,9 +121,78 @@ const getLookbookCollection = async (_, args, context) => {
       { $match: { _id: new ObjectId(args.id) } },
       {
         $lookup: {
-          from: 'uploads',
-          localField: 'looks',
+          from: 'users',
+          localField: 'ownerId',
           foreignField: '_id',
+          as: 'owner',
+        },
+      },
+      {
+        $project: {
+          'owner.email': 0,
+          'owner.currentBalance': 0,
+        },
+      },
+      {
+        $addFields: {
+          owner: { $arrayElemAt: ['$owner', 0] },
+        },
+      },
+      {
+        $lookup: {
+          from: 'uploads',
+          let: { looks: '$looks' },
+          pipeline: [
+            {
+              $match: { $expr: { $in: ['$_id', '$$looks'] } },
+            },
+            {
+              $lookup: {
+                from: 'brands',
+                let: { brandId: '$brandId' },
+                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$brandId'] } } }],
+                as: 'brand',
+              },
+            },
+            {
+              $lookup: {
+                from: 'categories',
+                let: { categoryId: '$categoryId' },
+                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$categoryId'] } } }],
+                as: 'category',
+              },
+            },
+            {
+              $lookup: {
+                from: 'products',
+                let: { productId: '$productId' },
+                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$productId'] } } }],
+                as: 'product',
+              },
+            },
+            {
+              $lookup: {
+                from: 'users',
+                let: { memberId: '$memberId' },
+                pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$memberId'] } } }],
+                as: 'member',
+              },
+            },
+            {
+              $project: {
+                'member.email': 0,
+                'member.currentBalance': 0,
+              },
+            },
+            {
+              $addFields: {
+                brand: { $arrayElemAt: ['$brand', 0] },
+                category: { $arrayElemAt: ['$category', 0] },
+                product: { $arrayElemAt: ['$product', 0] },
+                member: { $arrayElemAt: ['$member', 0] },
+              },
+            },
+          ],
           as: 'looks',
         },
       },
@@ -73,6 +200,8 @@ const getLookbookCollection = async (_, args, context) => {
     .toArray();
 
   const collection = collections[0];
+
+  console.log(JSON.stringify(collection, undefined, 2));
 
   if (collection.private && collection.ownerId.toString() !== reqDbUser._id.toString())
     throw new ForbiddenError('Cannot access this collection');

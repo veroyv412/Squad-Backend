@@ -10,7 +10,7 @@ const typeDefs = gql`
 
   type LookbookCollection {
     _id: ID!
-    ownerId: ID!
+    owner: User!
     private: Boolean!
     title: String!
     looks: [UploadPhoto]!
