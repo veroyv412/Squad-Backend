@@ -16,6 +16,14 @@ const typeDefs = gql`
     looks: [UploadPhoto]!
   }
 
+  type LookbookCollectionShape {
+    _id: ID!
+    ownerId: ID!
+    private: Boolean!
+    title: String!
+    looks: [ID!]!
+  }
+
   type UserLookbookCollections {
     data: [LookbookCollection!]!
     metadata: Metadata!
@@ -38,8 +46,8 @@ const typeDefs = gql`
 
   extend type Mutation {
     createLookbookCollection(data: LookbookCollectionCreationInput!): ID
-    updateLookbookCollection(data: LookbookCollectionUpdateInput!): ID
-    deleteLookbookCollection(id: ID!): Boolean
+    updateLookbookCollection(data: LookbookCollectionUpdateInput!): LookbookCollection!
+    deleteLookbookCollection(id: ID!): LookbookCollectionShape!
   }
 `;
 

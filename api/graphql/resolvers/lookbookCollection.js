@@ -266,7 +266,7 @@ const updateLookbookCollection = async (_, args, context) => {
         }
       );
 
-    return args.data.id;
+    return collectionData;
   } catch (e) {
     return e;
   }
@@ -286,7 +286,7 @@ const deleteLookbookCollection = async (_, args, context) => {
 
     await dbClient.db(dbName).collection('lookbook_collections').deleteOne(target);
 
-    return true;
+    return target;
   } catch (e) {
     return e;
   }
