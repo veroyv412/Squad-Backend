@@ -90,6 +90,7 @@ const typeDefs = gql`
     flagged: Boolean
     approved: Boolean
     uuid: String
+    description: String
   }
 
   type SearchUser {

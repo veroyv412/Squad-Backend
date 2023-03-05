@@ -709,10 +709,12 @@ const addUploadedPhoto = async (parent, args, context) => {
       productId: null,
       memberId: new ObjectId(args.uploadPhoto.userId),
       productUrl: args.uploadPhoto.productUrl,
+      description: args.uploadPhoto.description,
       approved: false,
-      uuid: args.uploadPhoto.uuid,
       createdAt: new Date(),
     };
+
+    console.log(args.uploadPhoto);
 
     let brand = await dbClient
       .db(dbName)
@@ -735,7 +737,7 @@ const addUploadedPhoto = async (parent, args, context) => {
             $or: [{ _id: args.uploadPhoto.product?._id }, { name: args.uploadPhoto.product?.name }],
           },
           { brandId: brand?._id },
-          { categoryId: category._id },
+          { categoryId: category?._id },
         ],
       });
 
@@ -830,9 +832,9 @@ const addUploadedPhoto = async (parent, args, context) => {
       }
     }
 
-    await notificationResolvers.helper.createPendingUploadNotificationToMember(
-      upload.insertedId.toString()
-    );
+    // await notificationResolvers.helper.createPendingUploadNotificationToMember(
+    //   upload.insertedId.toString()
+    // );
 
     await storeUploadCarePhoto(args.uploadPhoto.uuid);
 
